@@ -33,11 +33,11 @@ def main():
         ),
         "4. Distribution Moments Analysis": st.sidebar.checkbox(
             "📉 Distribution Analysis",
-            help="Analyze statistical moments of returns"
+            help="Analyse statistical moments of returns"
         ),
         "5. Annualisation of Return and Volatility": st.sidebar.checkbox(
             "📅 Annual Metrics",
-            help="View annualized returns and volatility"
+            help="View annualised returns and volatility"
         )
     }
     
@@ -67,7 +67,7 @@ def main():
     data.columns = tickers.keys()
 
     # Calculate daily log returns
-    # Formula: log_return = ln(P_t) - ln(P_{t-1})
+    # Formula used: log_return = ln(P_t) - ln(P_{t-1})
     log_returns = np.log(data / data.shift(1)).dropna()
 
     # Compute statistical moments for each instrument and store them in a dictionary
@@ -117,7 +117,7 @@ def main():
                 if result[1] < 0.05:
                     st.write("**Stationary**")
                 else:
-                    st.write("**Not stationary**")
+                    st.write("**Not Stationary**")
 
     # 2. Random Walk Analysis
     if sections["2. Random Walk Analysis"]:

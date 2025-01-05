@@ -3,16 +3,13 @@ import importlib
 import sys
 from pathlib import Path
 
-# Add the current directory to the Python path for dynamic imports
+# Add current directory to Python path to enable dynamic imports
 sys.path.append(str(Path(__file__).parent))
 
 
 def clear_sidebar():
-    """
-    Clears the sidebar content and resets relevant session state variables.
-    This ensures that the sidebar is updated dynamically when switching
-    between assignments or questions.
-    """
+    # Clears the sidebar and resets session variables
+    # Used when switching between assignments or questions
     for key in list(st.session_state.keys()):
         if key.startswith("analysis_") or "select" in key:
             del st.session_state[key]
@@ -20,45 +17,38 @@ def clear_sidebar():
 
 
 def load_module(module_name):
-    """
-    Dynamically imports a module and executes its main() function.
-    
-    Parameters:
-        module_name (str): The name of the module to import and execute.
-    """
+    # Loads a module and runs its main() function
+    # module_name: name of module to import and run
     try:
         module = importlib.import_module(module_name)
         if hasattr(module, "main"):
-            module.main()  # Execute the main function of the module
+            module.main()  # Run the main function
         else:
-            st.warning(f"The module '{module_name}' does not have a main() function.")
+            st.warning(f"The module '{module_name}' doesn't have a main() function.")
     except Exception as e:
-        st.error(f"Error while loading module '{module_name}': {str(e)}")
+        st.error(f"Error whilst loading module '{module_name}': {str(e)}")
 
 
 def main():
-    """
-    Main function to render the Streamlit app. It allows users to switch
-    between assignments and questions dynamically, with content updating
-    appropriately.
-    """
-    # Configure the page layout and title
+    # Main app function - handles assignment switching and content updates
+    
+    # Set up page layout
     st.set_page_config(
         page_title="ARI5122 - Financial Engineering",
         layout="wide",
         initial_sidebar_state="expanded"
     )
     
-    # Display the main title of the application
+    # Show main title
     st.markdown("## ARI5122 - Financial Engineering")
     
-    # Initialise session state variables for assignment and question tracking
+    # Set up tracking variables if they don't exist
     if "active_assignment" not in st.session_state:
         st.session_state.active_assignment = "Assignment 1"
     if "active_question" not in st.session_state:
         st.session_state.active_question = None
 
-    # Sidebar: Assignment selection using radio buttons
+    # Create assignment selection in sidebar
     st.sidebar.markdown("### Select an Assignment")
     selected_assignment = st.sidebar.radio(
         "Assignments",
@@ -67,13 +57,13 @@ def main():
         key="assignment_radio"
     )
 
-    # Reset the state when switching between assignments
+    # Reset when changing assignments
     if st.session_state.active_assignment != selected_assignment:
         st.session_state.active_assignment = selected_assignment
         st.session_state.active_question = None
-        clear_sidebar()  # Clear sidebar content for the new assignment
+        clear_sidebar()  # Clear for new assignment
 
-    # Define questions for each assignment
+    # Set up questions for each assignment
     if selected_assignment == "Assignment 1":
         st.markdown("### Assignment 1")
         questions = {
@@ -91,18 +81,18 @@ def main():
             "Question 4": "Ass2D"
         }
 
-    # Sidebar: Question selection using a dropdown menu
+    # Create question dropdown in sidebar
     selected_question = st.selectbox(
         f"Choose a question for {selected_assignment}:",
         options=list(questions.keys()),
         key="question_select"
     )
 
-    # Load the module corresponding to the selected question
+    # Load selected question's module
     if selected_question != "Select a question":
         if st.session_state.active_question != selected_question:
             st.session_state.active_question = selected_question
-            clear_sidebar()  # Clear sidebar when a new question is selected
+            clear_sidebar()  # Clear when new question selected
         
         module_name = questions[selected_question]
         load_module(module_name)
