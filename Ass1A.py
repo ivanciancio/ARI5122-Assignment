@@ -220,7 +220,7 @@ def main():
             - **Variance (Second Moment):** Measures the dispersion of returns around the mean.
             - **Skewness (Third Moment):** Assesses the asymmetry of the return distribution.
             - **Kurtosis (Fourth Moment):** Evaluates the 'tailedness' of the distribution.
-        - **Step 3: Summarize the Results**
+        - **Step 3: Summarise the Results**
             - Stored the computed statistics in a summary table for comparison.
         """)
 
