@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 def main():
     # Title of the application
-    st.write("### Mean-Variance Optimization & Machine Learning (Neural Networks)")
+    st.write("### Mean-Variance Optimisation & Machine Learning (Neural Networks)")
 
     # Selecting stock symbols for the analysis - choosing large, well-known technology stocks
     tickers = ['AAPL', 'MSFT', 'GOOGL']
@@ -25,13 +25,13 @@ def main():
 
     # Create checkboxes in the sidebar for each analysis section with better visibility
     sections = {
-        "1. Mean-Variance Optimization": st.sidebar.checkbox(
+        "1. Mean-Variance Optimisation": st.sidebar.checkbox(
             "📊 Mean-Variance Analysis",
-            help="View traditional portfolio optimization results"
+            help="View traditional portfolio optimisation results"
         ),
         "2. Neural Network Enhancement": st.sidebar.checkbox(
             "🧠 Neural Network Analysis",
-            help="View ML-enhanced portfolio optimization"
+            help="View ML-enhanced portfolio optimisation"
         ),
         "3. Comparison": st.sidebar.checkbox(
             "📈 Results Comparison",
@@ -53,23 +53,23 @@ def main():
         return data.pct_change().dropna()
 
     def portfolio_performance(weights, mean_returns, cov_matrix, risk_free_rate):
-        # Calculate annualized returns, volatility, and Sharpe ratio
+        # Calculate annualised returns, volatility, and Sharpe ratio
         returns = np.sum(mean_returns * weights) * 252
         volatility = np.sqrt(np.dot(weights.T, np.dot(cov_matrix * 252, weights)))
         sharpe_ratio = (returns - risk_free_rate) / volatility
         return returns, volatility, sharpe_ratio
 
     def negative_sharpe_ratio(weights, mean_returns, cov_matrix, risk_free_rate):
-        # Function to be minimized in optimization
+        # Function to be minimised in optimisation
         return -portfolio_performance(weights, mean_returns, cov_matrix, risk_free_rate)[2]
 
-    # Set optimization parameters
+    # Set optimisation parameters
     num_assets = len(tickers)
     constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
     bounds = tuple((0, 1) for _ in range(num_assets))
     initial_weights = num_assets * [1. / num_assets]
 
-    # Initialize session state for storing results
+    # Initialise session state for storing results
     if 'mean_variance_results' not in st.session_state:
         st.session_state.mean_variance_results = None
     if 'nn_enhanced_results' not in st.session_state:
@@ -79,10 +79,10 @@ def main():
     stock_data = download_stock_data(tickers, start_date)
     daily_returns = calculate_daily_returns(stock_data)
 
-    # PART 1: Traditional Mean-Variance Optimization
-    if sections["1. Mean-Variance Optimization"]:
+    # PART 1: Traditional Mean-Variance Optimisation
+    if sections["1. Mean-Variance Optimisation"]:
         st.markdown("---")
-        st.header("Traditional Mean-Variance Optimization")
+        st.header("Traditional Mean-Variance Optimisation")
 
         # Display historical stock prices
         st.subheader("Stock Prices (5-Year Historical)")
@@ -106,14 +106,14 @@ def main():
         st.subheader("Daily Returns Summary Statistics")
         st.write(daily_returns.describe())
 
-        # Implementing Markowitz Mean-Variance Optimization
-        st.subheader("Optimization: Markowitz Mean-Variance Optimization")
+        # Implementing Markowitz Mean-Variance Optimisation
+        st.subheader("Optimisation: Markowitz Mean-Variance Optimisation")
         mean_returns = daily_returns.mean()
         cov_matrix = daily_returns.cov()
         risk_free_rate = 0.02
 
         # Run optimization
-        with st.spinner('Optimizing portfolio weights...'):
+        with st.spinner('Optimising portfolio weights...'):
             optimal_result = minimize(negative_sharpe_ratio, initial_weights, 
                                    args=(mean_returns, cov_matrix, risk_free_rate),
                                    method='SLSQP', bounds=bounds, constraints=constraints)
@@ -137,7 +137,7 @@ def main():
     # PART 2: Neural Network Enhancement
     if sections["2. Neural Network Enhancement"]:
         st.markdown("---")
-        st.header("Neural Network Enhanced Optimization")
+        st.header("Neural Network Enhanced Optimisation")
 
         # Prepare data for neural network
         st.write("Preparing data for MLPRegressor Neural Network...")
@@ -167,7 +167,7 @@ def main():
             st.write("First few predictions:")
             st.write(predicted_returns_df.head())
 
-            # Use predictions for optimization
+            # Use predictions for optimisation
             mean_predicted_returns = pd.Series(np.mean(predicted_returns, axis=0), 
                                             index=tickers, name='Mean')
             st.write("Mean Predicted Returns from Neural Network:")
@@ -183,7 +183,7 @@ def main():
             st.write(f"Risk-Free Rate: {risk_free_rate:.2%}")
 
             # Optimize with predicted returns
-            with st.spinner('Optimizing portfolio weights using predicted returns...'):
+            with st.spinner('Optimising portfolio weights using predicted returns...'):
                 optimal_result_predicted = minimize(negative_sharpe_ratio, initial_weights, 
                                                  args=(mean_predicted_returns, cov_matrix, risk_free_rate),
                                                  method='SLSQP', bounds=bounds, constraints=constraints)
@@ -222,7 +222,7 @@ def main():
 
             # Create comparison table
             comparison_data = {
-                "Metric": ["Expected Return (Annualized)", "Volatility (Annualized)", "Sharpe Ratio"],
+                "Metric": ["Expected Return (Annualised)", "Volatility (Annualised)", "Sharpe Ratio"],
                 "Mean-Variance Portfolio": [mean_variance_returns, mean_variance_volatility, 
                                          mean_variance_sharpe],
                 "NN-Enhanced Portfolio": [nn_enhanced_returns, nn_enhanced_volatility, 
