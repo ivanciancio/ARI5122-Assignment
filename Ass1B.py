@@ -32,9 +32,9 @@ def main():
             "📊 Load and Process Data",
             help="View the loaded and preprocessed stock price data"
         ),
-        "2. Data Normalization": st.sidebar.checkbox(
-            "📈 Normalize Data",
-            help="View the normalized stock price data"
+        "2. Data Normalisation": st.sidebar.checkbox(
+            "📈 Normalise Data",
+            help="View the normalised stock price data"
         ),
         "3. PCA Application": st.sidebar.checkbox(
             "🔄 Apply PCA",
@@ -42,7 +42,7 @@ def main():
         ),
         "4. COVID-19 Analysis": st.sidebar.checkbox(
             "🦠 COVID-19 Period Analysis",
-            help="Analyze stock/sector contributions during COVID-19"
+            help="Analyse stock/sector contributions during COVID-19"
         ),
         "5. Results Interpretation": st.sidebar.checkbox(
             "📝 Interpret Results",
@@ -219,7 +219,7 @@ def main():
         st.write('Stock price data from January 2019 to December 2021:')
         st.dataframe(data)
 
-    if sections["2. Data Normalization"]:
+    if sections["2. Data Normalisation"]:
         st.markdown("---")
         st.header('2. Normalise the data')
         normalised_data = normalise_data(data)
