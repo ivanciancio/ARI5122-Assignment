@@ -12,7 +12,7 @@ def main():
     # Title of the application
     st.write("### Predicting Financial Market Volatility")
 
-    # Initialize session state variables if they do not exist
+    # Initialise session state variables if they do not exist
     # Using session state allows data to persist across user interactions
     for var in ['garch_mse', 'nn_mse', 'garch_params', 'nn_params', 
                 'garch_predictions', 'nn_predictions', 'actual_volatility']:
