@@ -9,7 +9,7 @@ from sklearn.neural_network import MLPRegressor  # For the neural network model
 from sklearn.preprocessing import StandardScaler  # For scaling data before training
 
 def main():
-    # Title of the application
+    # Title
     st.write("### Predicting Financial Market Volatility")
 
     # Initialise session state variables if they do not exist
@@ -81,10 +81,10 @@ def main():
                 st.write("## Fitting GARCH(1,1) Model")
                 # Set up and fit a basic GARCH(1,1) model, commonly used to model volatility clustering in finance
                 model = arch_model(train, vol='Garch', p=1, q=1, rescale=False)
-                model_fit = model.fit(disp='off')  # Fit the model to the training data without verbose output
+                model_fit = model.fit(disp='off')  # Fit the model to the training data without detailed output
                 st.write(model_fit.summary())  # Display a detailed summary of the fitted GARCH model parameters
 
-                # Provide clear explanations of the data preparation, model specification, and assumptions
+                # Explanations of the data preparation, model specification, and assumptions
                 st.write("## Model Fitting Steps and Assumptions")
                 st.write("### Data Preparation Steps:")
                 st.markdown("""
@@ -120,7 +120,7 @@ def main():
                 # Store model parameters for later inspection or comparison
                 st.session_state.garch_params = model_fit.params
 
-                # Implement a rolling forecast to obtain out-of-sample volatility predictions
+                # Implemented a rolling forecast to obtain out-of-sample volatility predictions
                 st.write("## Rolling Forecast")
                 rolling_predictions = []
                 test_size = len(test)
@@ -140,7 +140,7 @@ def main():
                     # Extract the predicted variance and take the square root to get volatility
                     rolling_predictions.append(np.sqrt(forecast.variance.values[-1, :][0]))
 
-                # Convert rolling predictions into a Pandas Series for convenience
+                # Converted rolling predictions into a Pandas Series for convenience
                 rolling_predictions = pd.Series(rolling_predictions, index=test.index)
                 # Actual volatility approximated as the rolling standard deviation over a 5-day window
                 actual_volatility = test.rolling(window=5).std()
@@ -185,7 +185,7 @@ def main():
                 st.write("## Fitting Feed-Forward Neural Network Model")
                 st.write("### Neural Network Architecture and Design Choices:")
 
-                # Provide rationale for the chosen network architecture and training settings
+                # Explaining the reasoning for the chosen network architecture and training settings
                 st.markdown("""
                 1. **Structure**:
                    - Input: Previous day's return
@@ -269,7 +269,7 @@ def main():
                 st.session_state.nn_mse = nn_mse
                 st.write(f"Mean Squared Error (MSE) of the Neural Network Model: {nn_mse:.6f}")
 
-                # Explain why MSE is used and how it informs us about forecast accuracy
+                # How MSE measures forecast accuracy and what the values tell us about model performance
                 st.write("## Analysis Explanation")
                 st.write("As with the GARCH model, MSE here helps us understand how closely the neural network's predicted volatility matches the observed market volatility.")
 
@@ -298,7 +298,7 @@ def main():
                         st.write(f"- Neural Network Model: **{nn_mae:.6f}**")
                         
 
-                        ## Model comparison visualization
+                        ## Model comparison visualisation
                         fig, ax = plt.subplots(figsize=(10, 5))
                         ax.plot(st.session_state.actual_volatility, label="Actual Volatility", color="blue")
                         ax.plot(st.session_state.garch_predictions, label="GARCH Predictions", 
@@ -322,7 +322,7 @@ def main():
                         else:
                             st.write("The **Neural Network Model** performed better, possibly capturing nonlinear patterns in returns that the GARCH model could not.")
 
-                        # Summarise key findings for a clear academic conclusion
+                        # Summarise key findings
                         st.write("## Findings")
                         st.write("The model with the lower MSE and MAE generally provides a better fit to the observed volatility pattern. This assessment helps in choosing a suitable modelling technique for volatility forecasting.")
 
@@ -340,11 +340,10 @@ def main():
                         - **Limitations**: Requires careful tuning, may need more data, and can be prone to overfitting if not regularised.
                         """)
 
-                        # Potential improvements section
                         st.write("## Potential Improvements")
                         st.markdown("""
-                        - **GARCH Model**: Incorporate additional explanatory variables or try more flexible distributions.
-                        - **Neural Network Model**: Experiment with advanced architectures (e.g., LSTM, Transformers) or more comprehensive feature sets.
+                        - **GARCH Model**: Consider EGARCH or GJR-GARCH variants to capture uneven patterns in volatility.
+                        - **Neural Network Model**: Add more complex features (lagged volatilities, volumes, technical indicators) and explore LSTM architectures for better temporal modeling.
                         """)
 
                 # Display model parameters

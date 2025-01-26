@@ -1,4 +1,3 @@
-# Import necessary libraries for financial analysis and visualisation
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -6,27 +5,25 @@ import numpy as np
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
 
-
 def main():
-    # Title of the application
+    # Title
     st.write("### Beta Calculation and Interpretation")
 
-    # Define the stock symbols to be used in the analysis
+    # Defining the stock symbols to be used in the analysis
     symbols = {
         "S&P 500": "^GSPC",  # S&P 500 index as the market benchmark
         "Amazon (AMZN)": "AMZN",  # Amazon stock
         "Boeing (BA)": "BA",  # Boeing stock
         "General Electric (GE)": "GE",  # General Electric stock
-        # Apple (AAPL) has been intentionally removed for Part 1A as per instructions
     }
 
-    # Define the time periods for analysis
+    # Defining the time periods for analysis
     start_date_part1 = "2009-01-01"  # Start of the period for Part 1 analysis
     end_date_part1 = "2018-12-31"  # End of the period for Part 1 analysis
     start_date_part2 = "2014-01-01"  # Start of the period for Part 2 analysis
     end_date_part2 = "2018-11-30"  # End of the period for Part 2 analysis
 
-    # Sidebar options for user to select which analyses to display
+    # Sidebar options to select which analyses to display
     st.sidebar.markdown("### Available Analyses")
     st.sidebar.markdown("Select the analyses you want to view:")
 
@@ -75,7 +72,7 @@ def main():
     # Function to simulate stock prices using the Geometric Brownian Motion (GBM) model
     @st.cache_data
     def simulate_gbm(S0, mu, sigma, days, n_simulations):
-        # Initialise an array to store simulated prices
+        # Initialize array to store simulated prices
         dt = 1  # Time step (1 day)
         price_paths = np.zeros((days, n_simulations))  # Create a matrix for price paths
         price_paths[0] = S0  # Set initial price for all simulations
@@ -88,72 +85,64 @@ def main():
             )
         return pd.DataFrame(price_paths)
 
+    # Fetch and process all data once at the start if needed
+    if any([sections["1. Data Collection"], sections["2. Beta Calculation"]]):
+        if 'processed_data' not in st.session_state:
+            st.session_state.processed_data = {}
+            for name, ticker in symbols.items():
+                st.write(f"Fetching data for {name}...")
+                data = fetch_data(ticker, start_date_part1, end_date_part1)
+                data['Daily Returns'] = calculate_daily_returns(data)
+                st.session_state.processed_data[name] = data
+
     # Part 1A: Data Collection and Returns Calculation
     if sections["1. Data Collection"]:
         st.markdown("---")
         st.subheader("Part 1A: Data Collection and Returns Calculation")
-        results = {}
-
-        # Fetch data for each stock symbol
-        for name, ticker in symbols.items():
-            st.write(f"Fetching data for {name}...")
-            data = fetch_data(ticker, start_date_part1, end_date_part1)  # Fetch data
-            data['Daily Returns'] = calculate_daily_returns(data)  # Calculate daily returns
-            results[name] = data  # Store results for later use
 
         # Display a preview of the collected data
-        for name, data in results.items():
+        for name, data in st.session_state.processed_data.items():
             st.subheader(f"{name} Data Preview")
-            preview_data = data[['Adj Close', 'Daily Returns']].dropna().reset_index()  # Clean data
-            preview_data['Date'] = preview_data['Date'].dt.strftime('%d-%m-%Y')  # Format dates
-            preview_data.columns = ['Date', 'Adj Close', 'Daily Returns']  # Rename columns
-            st.dataframe(preview_data.head())  # Display the first few rows
+            preview_data = data[['Adj Close', 'Daily Returns']].dropna().reset_index()
+            preview_data['Date'] = preview_data['Date'].dt.strftime('%d-%m-%Y')
+            preview_data.columns = ['Date', 'Adj Close', 'Daily Returns']
+            st.dataframe(preview_data.head())
 
     # Part 1B: Beta Calculation
     if sections["2. Beta Calculation"]:
         st.markdown("---")
         st.subheader("Part 1B: Beta Calculation")
-        results = {}
 
-        # Fetch data for all symbols except the market benchmark (S&P 500)
-        for name, ticker in symbols.items():
-            if name != "S&P 500":
-                st.write(f"Fetching data for {name}...")
-                data = fetch_data(ticker, start_date_part1, end_date_part1)  # Fetch data
-                data['Daily Returns'] = calculate_daily_returns(data)  # Calculate daily returns
-                results[name] = data  # Store processed data
-
-        # Fetch market returns for the S&P 500
-        sp500_data = fetch_data("^GSPC", start_date_part1, end_date_part1)
-        sp500_data['Daily Returns'] = calculate_daily_returns(sp500_data)
-        sp500_returns = sp500_data['Daily Returns'].dropna()  # Remove NaN values
+        # Get market returns (S&P 500)
+        sp500_returns = st.session_state.processed_data["S&P 500"]['Daily Returns'].dropna()
 
         # Calculate beta for each stock relative to the S&P 500
         beta_results = []
-        for name, data in results.items():
-            asset_returns = data['Daily Returns'].dropna()  # Extract asset returns
+        for name, data in st.session_state.processed_data.items():
+            if name != "S&P 500":  # Skip the market benchmark
+                asset_returns = data['Daily Returns'].dropna()
 
-            # Align asset returns with market returns
-            common_index = sp500_returns.index.intersection(asset_returns.index)
-            aligned_sp500 = sp500_returns.loc[common_index]
-            aligned_asset = asset_returns.loc[common_index]
+                # Align asset returns with market returns
+                common_index = sp500_returns.index.intersection(asset_returns.index)
+                aligned_sp500 = sp500_returns.loc[common_index]
+                aligned_asset = asset_returns.loc[common_index]
 
-            # Calculate beta and related statistics
-            beta, p_value, conf_interval = calculate_beta(aligned_asset, aligned_sp500)
+                # Calculating beta and related statistics
+                beta, p_value, conf_interval = calculate_beta(aligned_asset, aligned_sp500)
 
-            # Store results in a list
-            beta_results.append({
-                "Asset": name,
-                "Beta": round(beta, 3),
-                "P-Value": round(p_value, 3),
-                "95% CI Lower": round(conf_interval[0], 3),
-                "95% CI Upper": round(conf_interval[1], 3)
-            })
+                # Store results in a list
+                beta_results.append({
+                    "Asset": name,
+                    "Beta": round(beta, 3),
+                    "P-Value": round(p_value, 3),
+                    "95% CI Lower": round(conf_interval[0], 3),
+                    "95% CI Upper": round(conf_interval[1], 3)
+                })
 
-        # Convert results into a DataFrame for better display
+        # Converting results into a DataFrame for better display
         beta_df = pd.DataFrame(beta_results)
 
-        # Display beta results as a table
+        # Displaying beta results as a table
         st.dataframe(
             beta_df.style.format(
                 {"Beta": "{:.3f}", "P-Value": "{:.3f}", "95% CI Lower": "{:.3f}", "95% CI Upper": "{:.3f}"}
@@ -169,7 +158,7 @@ def main():
         # Interpretation of beta values
         st.subheader("Interpretation")
         st.write("""
-        **Beta Values and Their Implications**
+        **Beta values and their implications**
         - **Beta > 1**: Indicates higher volatility compared to the market.
         - **Beta < 1**: Indicates lower volatility compared to the market.
         - **Beta ~ 1**: Indicates the asset moves in line with the market.
@@ -185,29 +174,29 @@ def main():
         st.markdown("---")
         st.subheader("Part 2: Apple Stock Simulation and Risk Assessment")
 
-        # Fetch Apple stock data for the specified time range
+        # Fetching Apple stock data for the specified time range
         st.write("Fetching Apple's data...")
         apple_data = fetch_data("AAPL", start_date_part2, end_date_part2)
         apple_data['Daily Returns'] = calculate_daily_returns(apple_data)
-        daily_returns = apple_data['Daily Returns'].dropna()  # Clean daily returns
+        daily_returns = apple_data['Daily Returns'].dropna()
 
-        # Calculate parameters for the GBM model
-        mean_return = daily_returns.mean().item()  # Mean of daily returns
-        std_dev = daily_returns.std().item()  # Standard deviation (volatility)
-        last_price = apple_data['Adj Close'].iloc[-1].item()  # Last observed price
+        # Calculating parameters for the GBM model
+        mean_return = daily_returns.mean().item()
+        std_dev = daily_returns.std().item()
+        last_price = apple_data['Adj Close'].iloc[-1].item()
 
-        # Display calculated parameters
+        # Displaying calculated parameters
         st.write(f"**Mean Daily Return:** {mean_return:.5f}")
         st.write(f"**Volatility (Standard Deviation):** {std_dev:.5f}")
         st.write(f"**Last Observed Price:** ${last_price:.2f}")
 
-        # Simulate future price paths
+        # Simulating future price paths
         st.write("Simulating future price paths using GBM...")
-        days = 20  # Number of days for simulation
-        n_simulations = 1000  # Number of simulations
+        days = 20
+        n_simulations = 1000
         simulated_prices = simulate_gbm(last_price, mean_return, std_dev, days, n_simulations)
 
-        # Plot simulated price paths
+        # Plotting simulated price paths
         plt.figure(figsize=(10, 6))
         plt.plot(simulated_prices, alpha=0.1, color='blue')
         plt.title("Simulated Price Paths for Apple's Stock")
@@ -216,12 +205,12 @@ def main():
         plt.grid(True)
         st.pyplot(plt)
 
-        # Calculate Value at Risk (VaR) at 95% confidence level
+        # Calculating Value at Risk (VaR) at 95% confidence level
         st.subheader("Value at Risk (VaR) Calculation")
         simulated_returns = (simulated_prices.iloc[-1] - last_price) / last_price
         var_95 = np.percentile(simulated_returns, 5)
 
-        # Display VaR result
+        # Displaying VaR result
         st.write(f"**20-Day Value at Risk (VaR) at 95% Confidence Level:** {var_95:.2%}")
         st.write("""
         **Interpretation of VaR:**

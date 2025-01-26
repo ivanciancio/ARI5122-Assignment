@@ -8,17 +8,67 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
+ticker_to_company = {
+    # Technology (Top 5 by market cap)
+    'AAPL': 'Apple Inc.',
+    'MSFT': 'Microsoft Corporation',
+    'GOOGL': 'Alphabet Inc.',
+    'AMZN': 'Amazon.com Inc.',
+    'META': 'Meta Platforms Inc.',
+
+    # Travel & Hospitality (Major players)
+    'BKNG': 'Booking Holdings Inc.',
+    'ABNB': 'Airbnb Inc.',
+    'AAL': 'American Airlines Group Inc.',
+    'DAL': 'Delta Air Lines Inc.',
+    'MAR': 'Marriott International Inc.',
+
+    # Leisure & Entertainment (Key companies)
+    'DIS': 'The Walt Disney Company',
+    'RCL': 'Royal Caribbean Cruises Ltd.',
+    'CCL': 'Carnival Corporation & plc',
+    'MGM': 'MGM Resorts International',
+    'DKNG': 'DraftKings Inc.',
+
+    # Financial Services (Largest US banks and payment processors)
+    'JPM': 'JPMorgan Chase & Co.',
+    'BAC': 'Bank of America Corporation',
+    'GS': 'Goldman Sachs Group Inc.',
+    'V': 'Visa Inc.',
+    'MA': 'Mastercard Incorporated',
+
+    # Healthcare (Major pharmaceutical and healthcare companies)
+    'JNJ': 'Johnson & Johnson',
+    'PFE': 'Pfizer Inc.',
+    'MRNA': 'Moderna Inc.',
+    'UNH': 'UnitedHealth Group Inc.',
+    'CVS': 'CVS Health Corporation',
+    
+    # Retail (Largest US retailers)
+    'WMT': 'Walmart Inc.',
+    'COST': 'Costco Wholesale Corporation',
+    'HD': 'The Home Depot Inc.',
+    'TGT': 'Target Corporation',
+    'LOW': 'Lowe\'s Companies Inc.'
+}
+
+
 def main():
     # Set up the title and description
     st.write("### Stock PCA Analysis")
     
     # Define lists of stock tickers organised by sector
-    technology_stocks = ['AAPL', 'MSFT', 'NVDA']
-    travel_stocks = ['BKNG', 'ABNB', 'AAL']
-    leisure_stocks = ['RCL', 'CCL', 'IHG']
-    all_stocks = technology_stocks + travel_stocks + leisure_stocks  # Combine all stock lists
+    technology_stocks = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META']
+    travel_stocks = ['BKNG', 'ABNB', 'AAL', 'DAL', 'MAR']
+    leisure_stocks = ['DIS', 'RCL', 'CCL', 'MGM', 'DKNG']
+    financial_stocks = ['JPM', 'BAC', 'GS', 'V', 'MA']
+    healthcare_stocks = ['JNJ', 'PFE', 'MRNA', 'UNH', 'CVS']
+    retail_stocks = ['WMT', 'COST', 'HD', 'TGT', 'LOW']  
 
-    # Define the date range for the analysis
+    # Combine all stock lists
+    all_stocks = (technology_stocks + travel_stocks + leisure_stocks +  financial_stocks + healthcare_stocks + retail_stocks)
+
+       # Define the date range for the analysis
     start_date = '2019-01-01'
     end_date = '2021-12-31'
 
@@ -123,12 +173,19 @@ def main():
         covid_pca, _, covid_loadings, _, covid_data = covid_analysis(data)
         
         st.header('6. Portfolio Construction')
-
+        
         # 1. Identify top 5 stocks with highest loadings on PC1 (assumed resilience/growth)
         pc1_loadings = covid_loadings['PC1']
         top_stocks = pc1_loadings.sort_values(ascending=False).head(5)
+        
+        # Create a DataFrame with both ticker and company name
+        top_stocks_df = pd.DataFrame({
+            'Ticker': top_stocks.index,
+            'Company Name': [ticker_to_company[ticker] for ticker in top_stocks.index],
+            'PC1 Loading': top_stocks.values.round(4)
+        })
         st.subheader('Top 5 Stocks Exhibiting Resilience/Growth During COVID-19 (PC1 Loadings)')
-        st.write(top_stocks)
+        st.write(top_stocks_df)
         
         # 2. Construct an equally-weighted portfolio from the top stocks
         portfolio_stocks = top_stocks.index.tolist()
@@ -267,9 +324,11 @@ def main():
         
         # Plot principal component loadings
         st.write('Principal Component Loadings during COVID-19 period:')
-        fig4, ax4 = plt.subplots(figsize=(12, 8))
-        sns.heatmap(covid_loadings, annot=True, cmap='coolwarm', ax=ax4)
+        fig4, ax4 = plt.subplots(figsize=(20, 12))
+        sns.heatmap(covid_loadings, annot=True, cmap='coolwarm', ax=ax4, fmt='.2f')
         ax4.set_title('Principal Component Loadings during COVID-19 Period')
+        plt.xticks(rotation=45)  # Rotate x-axis labels for better readability
+        plt.yticks(rotation=0)   # Keep y-axis labels horizontal
         st.pyplot(fig4)
         
         # Display stocks contributing most to each principal component
@@ -290,7 +349,13 @@ def main():
                     with cols[j]:
                         st.write(f'### {pc}')
                         sorted_loadings = covid_loadings[pc].sort_values(ascending=False)
-                        st.write(sorted_loadings)
+                        # Create DataFrame with both ticker and company name
+                        loadings_df = pd.DataFrame({
+                            'Ticker': sorted_loadings.index,
+                            'Company Name': [ticker_to_company[ticker] for ticker in sorted_loadings.index],
+                            'Loading': sorted_loadings.values.round(4)
+                        })
+                        st.write(loadings_df)
 
     if sections["5. Results Interpretation"]:
         st.markdown("---")
@@ -298,17 +363,17 @@ def main():
         st.write("""
         **Interpretation of PCA Results During COVID-19 Period:**
         
-        The Principal Component Analysis (PCA) during the COVID-19 period helps us understand the underlying structure of the stock price movements and identify which stocks or sectors had the most significant influence.
+        The Principal Component Analysis (PCA) during the COVID-19 period helps us understand the underlying structure of the stock price movements and identify which stocks had the most significant influence.
         
-        - **First Principal Component (PC1):** Stocks with the highest positive loadings on PC1 contributed most to the overall variance during the COVID-19 period. If technology stocks like AAPL or MSFT have high positive loadings, it suggests that the technology sector was a major driver during this period.
+        - **First Principal Component (PC1):** Our analysis shows that MGM Resorts International, Goldman Sachs Group Inc., Target Corporation, JPMorgan Chase & Co., and Alphabet Inc. had the highest positive loadings on PC1, contributing most to the overall variance during the COVID-19 period. This diverse group of leaders challenges conventional expectations about sector performance during the pandemic.
         
-        - **Negative Loadings:** Stocks with negative loadings move inversely to those with positive loadings. If travel or leisure stocks have negative loadings, it indicates that these sectors moved differently compared to the technology sector.
+        - **Cross-Sector Resilience:** The distribution of top performers across leisure (MGM), financial services (GS, JPM), retail (TGT), and technology (GOOGL) sectors suggests that company-specific factors were more important than sector membership in determining market influence during this period.
         
-        - **Sector Performance:** By analysing the loadings, we can infer which sectors performed best and worst. For instance, if technology stocks have high positive loadings on PC1 and travel stocks have high negative loadings, it suggests that technology outperformed while travel underperformed during the COVID-19 period.
+        - **Performance Insights:** The PC1 loadings reveal that successful companies during the COVID-19 period came from various sectors, indicating that adaptability and individual company strategies were more crucial than sector-wide advantages.
         
         **Conclusion:**
         
-        The PCA results reveal that certain sectors had a more significant impact on the stock market variance during the COVID-19 period. Understanding these contributions can help investors make informed decisions about portfolio diversification and risk management.
+        The PCA results reveal that market leadership during the COVID-19 period was not concentrated in any single sector, but rather distributed across companies that demonstrated strong individual resilience and adaptability. Understanding these company-specific contributions, rather than sector-wide patterns, can help investors make more informed decisions about portfolio diversification and risk management.
         """)
 
     if sections["6. Portfolio Construction"]:

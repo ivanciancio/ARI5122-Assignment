@@ -240,7 +240,7 @@ def main():
                 st.write(f"""The Mean-Variance Portfolio has a higher risk-adjusted return with a Sharpe Ratio of {mean_variance_sharpe:.2f}, compared to the NN-Enhanced Portfolio's Sharpe Ratio of {nn_enhanced_sharpe:.2f}. The neural network did not improve the Sharpe ratio in this case, possibly due to overfitting or other challenges.""")
 
             st.write("### Challenges with Machine Learning")
-            st.write("""Machine learning models can suffer from issues like overfitting, where they learn patterns specific to the training set that do not generalise well to new data. Moreover, they may struggle to adapt to unexpected market conditions and can be data-intensive.""")
+            st.write("""Machine learning models can suffer from issues like overfitting, where they learn patterns specific to the training set that do not generalise well to new data. Moreover, they may struggle to adapt to unexpected market conditions and can be data intensive.""")
 
             st.write("### Practical Considerations")
             st.write("""While neural networks can capture complex relationships, their complexity and the need for extensive tuning may not always justify their use over simpler, well-understood methods like Mean-Variance Optimisation. In many practical scenarios, a straightforward approach can be more robust, transparent, and easier to implement.""")

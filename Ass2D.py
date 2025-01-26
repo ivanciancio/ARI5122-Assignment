@@ -12,10 +12,10 @@ import zipfile  # zipfile allows extraction of contents from ZIP archives
 from pandas.tseries.offsets import MonthEnd  # MonthEnd adjusts dates to the end of the month
 
 def main():
-    # Title of the application
+    # Title
     st.write("### Factor Models & Interpreting Risk")
 
-    # Sidebar options for user to select which analyses to display
+    # Sidebar options to select which analyses to display
     st.sidebar.markdown("### Available Analyses")
     st.sidebar.markdown("Select the analyses you want to view:")
 
@@ -103,7 +103,7 @@ def main():
         start_date = end_date - relativedelta(months=59)
         stock_data = yf.download('AMZN', start=start_date, end=end_date, interval='1mo')
 
-        # Flatten any MultiIndex columns that may appear, ensuring a simpler column structure
+        # Make nested columns into single-level column names for a simpler column structure
         if isinstance(stock_data.columns, pd.MultiIndex):
             stock_data.columns = stock_data.columns.to_flat_index()
             stock_data.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in stock_data.columns.values]
@@ -113,7 +113,7 @@ def main():
         stock_data.index = stock_data.index.to_period('M').to_timestamp('M')
         stock_data.sort_index(inplace=True)
 
-        # Identify the adjusted close column correctly in case of unexpected column naming
+        # Get the column name containing 'Adj Close'
         adj_close_col = [col for col in stock_data.columns if 'Adj Close' in col][0]
 
         # Calculate the monthly return for Amazon
@@ -183,7 +183,7 @@ def main():
                 rmw = regression_data['RMW']
                 cma = regression_data['CMA']
 
-                # CAPM Regression (Market-only model)
+                # Run regression to calculate stock's beta and market relationship using CAPM
                 st.write("### 1. CAPM Model Results")
                 X_capm = sm.add_constant(market_premium)
                 capm_model = sm.OLS(excess_returns, X_capm).fit()

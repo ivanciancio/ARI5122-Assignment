@@ -87,7 +87,7 @@ def main():
 
     # 1. Stationarity Analysis
     if sections["1. Stationarity Analysis"]:
-        st.markdown("---")  # Add a horizontal line as a separator
+        st.markdown("---")  
         st.header("1. Stationarity Analysis")
 
         # Plot daily closing prices for each instrument
@@ -99,29 +99,52 @@ def main():
         ax.legend()
         st.pyplot(fig)  # Display the plot in the Streamlit app
 
-        # Perform the Augmented Dickey-Fuller (ADF) test to check for stationarity
+        # Augmented Dickey-Fuller (ADF) test to check for stationarity
         st.subheader("Augmented Dickey-Fuller Test Results")
-        columns_layout = st.columns(3)  # Create three columns to display results side by side
 
-        for i, column in enumerate(data.columns):
-            with columns_layout[i]:
-                # Apply the ADF test on the price series
-                result = adfuller(data[column].dropna())
-                st.write(f"**{column}**")
-                st.write(f"ADF Statistic: {result[0]:.4f}")
-                st.write(f"p-value: {result[1]:.4f}")
-                st.write("Critical Values:")
-                for key, value in result[4].items():
-                    st.write(f"   {key}: {value:.4f}")
-                # Interpret the result
-                if result[1] < 0.05:
-                    st.write("**Stationary**")
-                else:
-                    st.write("**Not Stationary**")
+        # Create three columns for side-by-side display
+        col1, col2, col3 = st.columns(3)
+
+        # Function to display ADF results in a consistent format
+        def display_adf_results(column, result, col):
+            with col:
+                st.markdown(f"**{column}**")
+                st.markdown(f"""
+                🔹 **ADF Statistic:** {result[0]:.4f}  
+                🔹 **p-value:** {result[1]:.4f}  
+                
+                **Critical Values:**  
+                • 1%: {result[4]['1%']:.4f}  
+                • 5%: {result[4]['5%']:.4f}  
+                • 10%: {result[4]['10%']:.4f}  
+                
+                **Conclusion:**  
+                {'✅ Stationary' if result[1] < 0.05 else '❌ Not Stationary'}
+                """)
+                st.markdown("---")
+
+        # Display results for each instrument in separate columns
+        columns = list(data.columns)
+        for i, column in enumerate(columns):
+            result = adfuller(data[column].dropna())
+            if i == 0:
+                display_adf_results(column, result, col1)
+            elif i == 1:
+                display_adf_results(column, result, col2)
+            else:
+                display_adf_results(column, result, col3)
+
+        # Add a brief interpretation guide below
+        st.markdown("""
+        #### Interpretation Guide:
+        - **ADF Statistic:** A larger negative number means the data is more likely to have a pattern we can analyse
+        - **p-value < 0.05:** When this number is smaller than 0.05, the data behaves in a stable, predictable fashion
+        - **Critical Values:** These are our benchmark figures - if our ADF Statistic is more negative than these, we can trust there's a pattern in our data
+        """)
 
     # 2. Random Walk Analysis
     if sections["2. Random Walk Analysis"]:
-        st.markdown("---")  # Separator
+        st.markdown("---")  
         st.header("2. Random Walk Analysis")
 
         # Plot Autocorrelation Function (ACF) and Partial Autocorrelation Function (PACF)
@@ -167,7 +190,7 @@ def main():
 
     # 3. Log Returns Vs Arithmetic Returns
     if sections["3. Log Returns Vs Arithmetic Returns"]:
-        st.markdown("---")  # Separator
+        st.markdown("---") 
         st.header("3. Log Returns Vs Arithmetic Returns")
 
         # Calculate arithmetic returns (percentage change) First fill NA values, then calculate percentage change
@@ -189,25 +212,18 @@ def main():
         st.subheader("Why Are Log Returns Preferred Over Arithmetic Returns?")
         st.write("""
         - **Additivity Over Time:**
-            - Log returns are time-additive. The sum of log returns over multiple periods equals the log return over the total period.
-            - This property simplifies the calculation of multi-period returns.
+            - Log returns are time-additive. The sum of log returns over multiple periods equals the log return over the total period (e.g., log returns of 0.02 and 0.03 sum to a total return of 0.05).
         - **Normal Distribution Assumption:**
-            - Log returns are often more normally distributed than arithmetic returns.
-            - This makes them more suitable for statistical models that assume normality.
-        - **Consistency in Continuous Compounding:**
-            - Log returns assume continuous compounding, which aligns with many financial models and theoretical frameworks.
-        - **Mathematical Convenience:**
-            - The mathematical properties of logarithms make it easier to manipulate log returns in calculus and financial mathematics.
-        - **Example of Additivity:**
-            - If an asset has log returns of 0.02 and 0.03 over two periods, the total log return is 0.05.
-            - Arithmetic returns do not have this additive property.
-        - **Adjusting for Large Price Changes:**
+            - Log returns are often more normally distributed than arithmetic returns. This makes them more suitable for statistical models that assume normality.
+        - **Continuous Compounding Properties:**
+            - Log returns assume continuous compounding, which aligns with many financial models and theoretical frameworks. This property, combined with the natural properties of logarithms, makes them particularly useful in financial mathematics.
+        - **Risk Management Benefits:**
             - For assets with large price changes, log returns prevent negative prices, which can occur when using arithmetic returns.
         """)
 
     # 4. Distribution Moments Analysis
     if sections["4. Distribution Moments Analysis"]:
-        st.markdown("---")  # Separator
+        st.markdown("---") 
         st.header("4. Distribution Moments Analysis")
 
         # Description of calculations and steps
@@ -273,31 +289,62 @@ def main():
         
         **Conclusion:**
 
-        - **Risk and Return Trade-off:**
-            - **S&P 500** offers higher returns but comes with higher risk, as indicated by its variance.
-            - **Gold (SPDR)** provides lower returns with lower risk, which may appeal to risk-averse investors.
+        - **Risk-Return Trade-off:**
+            - Higher returns are associated with higher risk for the stock indices (S&P 500 and FTSE 100).
+            - Gold offers lower returns with lower risk, making it an attractive option for conservatve investors.
         - **Diversification Benefits:**
-            - Including assets with different risk and return profiles, like gold and equities, can enhance portfolio diversification.
+            - Combining assets with different risk-return profiles, such as stocks and gold, can enhance porfolio diversification, reducing overall risk while maintaining acceptable returns.
         - **Extreme Movements:**
-            - The high kurtosis values suggest that all instruments are prone to extreme market movements, underlining the importance of robust risk management strategies.
+            - The high kurtosis values across all instruments highlight the potential for extreme market events. This highlights the need for robust risk management strategies to mitigate the impact of tail risks.
         """)
 
-    # 5. Annualisation of Return and Volatility
+  # 5. Annualisation of Return and Volatility
     if sections["5. Annualisation of Return and Volatility"]:
-        st.markdown("---")  # Separator
+        st.markdown("---") 
         st.header("5. Annualisation of Return and Volatility")
-
-        # Annualise mean return and volatility for each instrument
-        st.subheader("Annualised Mean Return and Volatility")
-        for column in log_returns.columns:
-            mean = moments_summary[column]["Mean"]  # Daily mean return
-            variance = moments_summary[column]["Variance"]  # Daily variance
-            annualised_return = mean * 252  # Multiply by number of trading days in a year
-            annualised_volatility = np.sqrt(variance) * np.sqrt(252)  # Annualise volatility
-            st.write(f"### {column}")
-            st.write(f"- **Annualised Mean Return:** {annualised_return:.6f}")
-            st.write(f"- **Annualised Volatility (Risk):** {annualised_volatility:.6f}")
         
+        # Create four columns for the expanded layout
+        col1, col2, col3, col4, col5 = st.columns([2, 1.5, 1.5, 1.5, 1.5])
+        
+        with col1:
+            st.markdown("#### Instrument")
+        with col2:
+            st.markdown("#### Annual Return")
+        with col3:
+            st.markdown("#### As Percentage")
+        with col4:
+            st.markdown("#### Annual Volatility")
+        with col5:
+            st.markdown("#### As Percentage")
+
+        # Add a divider
+        st.markdown("---")
+
+        # Display data for each instrument
+        for column in log_returns.columns:
+            mean = moments_summary[column]["Mean"]
+            variance = moments_summary[column]["Variance"]
+            annualised_return = mean * 252
+            annualised_volatility = np.sqrt(variance) * np.sqrt(252)
+            
+            # Create columns for each row of data
+            c1, c2, c3, c4, c5 = st.columns([2, 1.5, 1.5, 1.5, 1.5])
+            
+            with c1:
+                st.markdown(f"**{column}**")
+            with c2:
+                st.markdown(f"**{annualised_return:.6f}**")
+            with c3:
+                st.markdown(f"**{annualised_return:.2%}**")
+            with c4:
+                st.markdown(f"**{annualised_volatility:.6f}**")
+            with c5:
+                st.markdown(f"**{annualised_volatility:.2%}**")
+                
+            # Add subtle separator between rows
+            st.markdown("<hr style='margin: 5px 0; opacity: 0.2'>", unsafe_allow_html=True)
+
+               
         # Explanation of the calculations and rationale
         st.subheader("Explanation of Calculations and Annualisation Rationale")
         st.write(
