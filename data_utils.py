@@ -4,7 +4,7 @@ import streamlit as st
 
 def safe_yf_download(tickers, start, end, interval=None):
     """
-    Safely download data from Yahoo Finance with enhanced error handling and data validation.
+    Safely download data from Yahoo Finance with error handling and data validation.
     
     Args:
         tickers: String or list of ticker symbols
@@ -31,27 +31,31 @@ def safe_yf_download(tickers, start, end, interval=None):
         if data.empty:
             st.error(f"No data received for tickers: {tickers}")
             return None
-        
-        # Normalize column structure
-        if isinstance(data.columns, pd.MultiIndex):
-            # Flatten MultiIndex columns
-            data.columns = ['_'.join(map(str, col)).strip() for col in data.columns.values]
-        
-        # Find the adjusted close column
-        adj_close_cols = [col for col in data.columns if 'Adj Close' in col or 'Adj_Close' in col]
-        
-        if not adj_close_cols:
-            st.error(f"No 'Adj Close' column found in data. Available columns: {list(data.columns)}")
-            return None
-        
-        # Handle single or multiple tickers
+            
+        # Handle different data structures based on single vs multiple tickers
         if isinstance(tickers, str) or len(tickers) == 1:
-            # For single ticker, return full DataFrame
+            # Single ticker - data will be a simple DataFrame
+            if 'Adj Close' not in data.columns:
+                st.error("Expected 'Adj Close' column not found in data")
+                return None
+            # Return full DataFrame for single ticker case
             return data
         else:
-            # For multiple tickers, return Adjusted Close columns
-            return data[adj_close_cols]
-            
+            # Multiple tickers - data will have MultiIndex columns
+            if ('Adj Close',) not in data.columns and 'Adj Close' not in data.columns:
+                st.error("Expected 'Adj Close' column not found in data")
+                return None
+                
+            # Handle both possible column structures
+            try:
+                return data['Adj Close']
+            except:
+                # If 'Adj Close' is part of MultiIndex
+                adj_close_cols = [col for col in data.columns if 'Adj Close' in col]
+                if adj_close_cols:
+                    return data[adj_close_cols]
+                return None
+                
     except Exception as e:
         st.error(f"Error downloading data: {str(e)}")
         return None
