@@ -22,9 +22,6 @@ def main():
     # Modified stock ticker input to handle EODHD format
     selected_stock = st.text_input("Enter Stock Ticker (e.g., AAPL.US, SPY.US, BTC-USD)")
     
-    # Help text for EODHD format
-    st.caption("Note: Add '.US' suffix for US stocks (e.g., 'AAPL.US' instead of 'AAPL')")
-
     # Sidebar options for user to select which analyses to display
     st.sidebar.markdown("### Available Analyses")
     st.sidebar.markdown("Select the analyses you want to view:")
