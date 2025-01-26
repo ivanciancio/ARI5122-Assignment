@@ -216,7 +216,7 @@ def main():
 
         if sections["4. COVID-19 Analysis"]:
             st.markdown("---")
-            st.header('4. COVID-19 Period Analysis')
+            st.header('4. Identify stocks/sectors contribution during COVID-19 period')
             covid_pca, _, covid_loadings, covid_explained_variance_ratio, _ = covid_analysis(data)
             
             st.write('Explained Variance Ratio during COVID-19 period:')
@@ -256,23 +256,29 @@ def main():
 
         if sections["5. Results Interpretation"]:
             st.markdown("---")
-            st.header('5. Results Interpretation')
+            st.header('5. Discuss the results and interpret')
             st.write("""
-            **Interpretation of PCA Results During COVID-19 Period:**
-
-            The Principal Component Analysis during the COVID-19 period reveals the underlying structure 
-            of stock price movements and identifies which stocks had the most significant influence.
-
-            Key findings:
-            1. First Principal Component (PC1) captures the market-wide effects of COVID-19
-            2. Sector-specific responses are visible in subsequent components
-            3. Technology and Healthcare sectors showed resilience
-            4. Travel and Leisure sectors exhibited high volatility
-            """)
+        **Interpretation of PCA Results During COVID-19 Period:**
+        
+        The Principal Component Analysis (PCA) during the COVID-19 period helps us understand the underlying structure of the stock price movements and identify which stocks had the most significant influence.
+        
+        - **First Principal Component (PC1):** Our analysis shows that MGM Resorts International, Goldman Sachs Group Inc., Target Corporation, JPMorgan Chase & Co., and Alphabet Inc. had the highest positive loadings on PC1, contributing most to the overall variance during the COVID-19 period. This diverse group of leaders challenges conventional expectations about sector performance during the pandemic.
+        
+        - **Cross-Sector Resilience:** The distribution of top performers across leisure (MGM), financial services (GS, JPM), retail (TGT), and technology (GOOGL) sectors suggests that company-specific factors were more important than sector membership in determining market influence during this period.
+        
+        - **Performance Insights:** The PC1 loadings reveal that successful companies during the COVID-19 period came from various sectors, indicating that adaptability and individual company strategies were more crucial than sector-wide advantages.
+        
+        **Conclusion:**
+        
+        The PCA results reveal that market leadership during the COVID-19 period was not concentrated in any single sector, but rather distributed across companies that demonstrated strong individual resilience and adaptability. Understanding these company-specific contributions, rather than sector-wide patterns, can help investors make more informed decisions about portfolio diversification and risk management.
+        """)
 
         if sections["6. Portfolio Construction"]:
             st.markdown("---")
+            st.header('6. Portfolio Construction')
             covid_pca, _, covid_loadings, _, covid_data = covid_analysis(data)
+            # 1. Identify top 5 stocks with highest loadings on PC1 (assumed resilience/growth)
+
             pc1_loadings = covid_loadings['PC1']
             top_stocks = pc1_loadings.sort_values(ascending=False).head(5)
             
@@ -281,8 +287,13 @@ def main():
                 'Company Name': [ticker_to_company[ticker] for ticker in top_stocks.index],
                 'PC1 Loading': top_stocks.values.round(4)
             })
-            st.subheader('Top 5 Stocks Exhibiting Resilience/Growth During COVID-19')
+            st.subheader('Top 5 Stocks Exhibiting Resilience/Growth During COVID-19 (PC1 Loadings)')
             st.write(top_stocks_df)
+            
+            # 2. Construct an equally-weighted portfolio from the top stocks
+            portfolio_stocks = top_stocks.index.tolist()
+            st.subheader('Constructed Portfolio Based on PCA Analysis')
+            st.write(portfolio_stocks)
             
             portfolio_stocks = top_stocks.index.tolist()
             portfolio_data = covid_data[portfolio_stocks]
@@ -290,10 +301,12 @@ def main():
             portfolio_cum_returns = (1 + portfolio_returns.mean(axis=1)).cumprod()
             
             try:
+                # Retrieve S&P 500 data for comparison
                 sp500_data = client.download('SPY.US', start='2020-03-01', end='2021-12-31')
                 sp500_returns = sp500_data['Adj Close'].pct_change().dropna()
                 sp500_cum_returns = (1 + sp500_returns).cumprod()
                 
+                # 3. Compare cumulative returns between the portfolio and S&P 500
                 st.subheader('Cumulative Returns Comparison')
                 fig, ax = plt.subplots()
                 portfolio_cum_returns.plot(ax=ax, label='PCA-Based Portfolio')
@@ -304,6 +317,10 @@ def main():
                 ax.legend()
                 st.pyplot(fig)
                 
+                # Calculate performance metrics
+                st.subheader('Performance Metrics')
+                
+                # Total returns
                 portfolio_total_return = portfolio_cum_returns.iloc[-1] - 1
                 sp500_total_return = sp500_cum_returns.iloc[-1] - 1
                 portfolio_volatility = portfolio_returns.std().mean() * np.sqrt(252)

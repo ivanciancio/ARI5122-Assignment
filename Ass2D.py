@@ -1,7 +1,7 @@
 # Import necessary libraries
 import streamlit as st  # Streamlit is used to create web-based dashboards and interactive data applications
 import pandas as pd  # Pandas is employed for efficient data manipulation and analysis
-import yfinance as yf  # yfinance is utilised to fetch historical financial data directly from Yahoo Finance
+from eodhdHelper import get_client  # Import EODHD client from helper module
 import datetime  # The datetime module assists in handling dates and times
 from dateutil.relativedelta import relativedelta  # relativedelta simplifies date arithmetic, e.g., subtracting months
 import statsmodels.api as sm  # statsmodels is used for statistical and econometric modelling
@@ -44,87 +44,123 @@ def main():
         st.subheader("Data Collection and Preparation")
         
         # Define dates
+        
         end_date = datetime.datetime(2018, 12, 31)  # End of December 2018
         start_date = end_date - relativedelta(months=59)  # Approximately 5 years prior
+               
+        # Stock ticker input
+        selected_stock = st.text_input("Enter Stock Ticker", value="AMZN")
         
-        st.write("### Obtaining Amazon Stock Data")
-        st.write(f"Collecting monthly returns for Amazon (AMZN) from {start_date.strftime('%d-%m-%Y')} to {end_date.strftime('%d-%m-%Y')}.")
-        
-        # Download Amazon stock data at a monthly interval
-        # This ensures the frequency matches the factor data (generally monthly)
-        stock_data = yf.download('AMZN', start=start_date, end=end_date, interval='1mo')
-        
-        # Explain the data preprocessing steps
-        st.write("### Data Preprocessing")
-        st.write("Below are the preprocessing steps performed on the obtained data:")
-        
-        # Drop any rows with missing values to ensure all calculations are based on complete data
-        stock_data.dropna(inplace=True)
-        st.write("1. Dropped any rows with missing values to maintain data integrity.")
-        
-        # Convert the index into a 'Date' column and ensure date format is uniform
-        stock_data.reset_index(inplace=True)
-        stock_data['Date'] = pd.to_datetime(stock_data['Date']).dt.strftime('%d-%m-%Y')
-        st.write("2. Converted the index into a separate 'Date' column, ensuring consistent date formatting.")
-        
-        # Calculate monthly returns
-        stock_data['Monthly Return'] = stock_data['Adj Close'].pct_change()
-        st.write("3. Computed monthly returns based on adjusted closing prices.")
-        
-        # Present the preprocessed data
-        st.write("### Preprocessed Amazon Stock Data")
-        processed_data = stock_data[['Date', 'Adj Close', 'Monthly Return']].dropna()
-        processed_data.columns = ['Date', 'Adjusted Close', 'Monthly Return']
-        st.dataframe(processed_data)
-        
-        # Preprocessing steps description
-        st.write("### Preprocessing Steps Before Calculating Factor Models")
-        st.write("""
-        Before calculating the factor models, the following preprocessing steps were performed to ensure data quality and consistency:
+        if selected_stock:
+            try:
+                # Initialize EODHD client
+                client = get_client()
+                
+                st.write(f"### Obtaining {selected_stock} Stock Data")
+                st.write(f"Collecting monthly returns from {start_date.strftime('%d-%m-%Y')} to {end_date.strftime('%d-%m-%Y')}.")
+                
+                # Download stock data from EODHD
+                stock_data = client.download(
+                    selected_stock, 
+                    start=start_date.strftime('%Y-%m-%d'), 
+                    end=end_date.strftime('%Y-%m-%d'), 
+                    interval='1mo'
+                )
+                                
+                # Explain the data preprocessing steps
+                st.write("### Data Preprocessing")
+                st.write("Below are the preprocessing steps performed on the obtained data:")
+                
+                # Reset index and convert dates
+                stock_data.reset_index(inplace=True)
+                stock_data['Date'] = pd.to_datetime(stock_data['Date'])
 
-        - **Data Cleaning**: Removed any rows with missing values to prevent errors in calculations and ensure accurate results.
+                # Resample to monthly data
+                monthly_data = stock_data.set_index('Date').resample('ME').last()
+                monthly_data.reset_index(inplace=True)
 
-        - **Date Formatting**: Converted the index to a datetime format and reset it to a 'Date' column for easier merging with factor data.
+                # Calculate monthly returns
+                monthly_data['Monthly Return'] = monthly_data['Adj Close'].pct_change()
 
-        - **Calculating Returns**: Computed the monthly returns using the percentage change in adjusted closing prices, which is essential for comparing stock performance with factor returns.
+                st.write("2. Converted to monthly data and computed returns.")
 
-        - **Data Alignment**: Although not fully executed in this part, aligning the dates of Amazon's returns with the Fama-French factor dates is crucial. This involves adjusting the stock data dates to match the month-end dates used in the factor data.
+                # Present the preprocessed data
+                st.write("### Preprocessed Amazon Stock Data")
+                processed_data = monthly_data[['Date', 'Adj Close', 'Monthly Return']].dropna()
+                processed_data.columns = ['Date', 'Adjusted Close', 'Monthly Return']
+                processed_data['Date'] = processed_data['Date'].dt.strftime('%Y-%m-%d')
+                processed_data['Monthly Return'] = processed_data['Monthly Return'] * 100  # Convert to percentage
+                st.dataframe(processed_data)
+                
+                # Preprocessing steps description
+                st.write("### Preprocessing Steps Before Calculating Factor Models")
+                st.write("""
+                Before calculating the factor models, the following preprocessing steps were performed to ensure data quality and consistency:
 
-        These preprocessing steps are vital to prepare the data for accurate factor model calculations in the subsequent analysis.
-        """)
+                - **Data Cleaning**: Removed any rows with missing values to prevent errors in calculations and ensure accurate results.
+
+                - **Date Formatting**: Converted the index to a datetime format and reset it to a 'Date' column for easier merging with factor data.
+
+                - **Calculating Returns**: Computed the monthly returns using the percentage change in adjusted closing prices, which is essential for comparing stock performance with factor returns.
+
+                - **Data Alignment**: Although not fully executed in this part, aligning the dates of stock returns with the Fama-French factor dates is crucial. This involves adjusting the stock data dates to match the month-end dates used in the factor data.
+
+                These preprocessing steps are vital to prepare the data for accurate factor model calculations in the subsequent analysis.
+                """)
+
+            except Exception as e:
+                st.error(f"Error downloading data: {str(e)}")
+                st.info("Make sure to include the correct suffix (e.g., '.US' for US stocks)")
 
     # Factor Model Calculations
     if sections["2. Factor Models"]:
         st.markdown("---")
         st.subheader("Factor Model Calculations")
         
-        # Replicate data loading and preparation steps for continuity
+        # Stock ticker input
+        selected_stock = st.text_input("Enter Stock Ticker for Factor Analysis", value="AMZN")
+        
+        # Dates remain the same
         end_date = datetime.datetime(2018, 12, 31)
         start_date = end_date - relativedelta(months=59)
-        stock_data = yf.download('AMZN', start=start_date, end=end_date, interval='1mo')
-
-        # Make nested columns into single-level column names for a simpler column structure
-        if isinstance(stock_data.columns, pd.MultiIndex):
-            stock_data.columns = stock_data.columns.to_flat_index()
-            stock_data.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in stock_data.columns.values]
-
-        # Convert index to the month-end of each period for proper alignment with factor data
-        stock_data.index = pd.to_datetime(stock_data.index)
-        stock_data.index = stock_data.index.to_period('M').to_timestamp('M')
-        stock_data.sort_index(inplace=True)
-
-        # Get the column name containing 'Adj Close'
-        adj_close_col = [col for col in stock_data.columns if 'Adj Close' in col][0]
-
-        # Calculate the monthly return for Amazon
-        stock_data['Monthly Return'] = stock_data[adj_close_col].pct_change()
-
-        # Display the processed monthly return data
-        st.write("### Monthly Returns Data - Amazon")
-        st.dataframe(stock_data[[adj_close_col, 'Monthly Return']])
-
+        
         try:
-            # Create an SSL context for secure data retrieval
+            # Initialize EODHD client
+            client = get_client()
+            
+            # Download stock data from EODHD
+            stock_data = client.download(
+                selected_stock, 
+                start=start_date.strftime('%Y-%m-%d'), 
+                end=end_date.strftime('%Y-%m-%d'), 
+                interval='1mo'
+            )
+
+            # Convert index to the month-end of each period for proper alignment with factor data
+            stock_data.index = pd.to_datetime(stock_data.index)
+            stock_data.index = stock_data.index.to_period('M').to_timestamp('M')
+            stock_data.sort_index(inplace=True)
+
+            # Calculate the monthly return
+            stock_data['Monthly Return'] = stock_data['Adj Close'].pct_change()
+
+            # Resample to monthly data, taking the last trading day of each month
+            monthly_data = stock_data.resample('ME').last()
+
+            # Reset index to make 'Date' a column again
+            monthly_data.reset_index(inplace=True)
+
+            # Calculate monthly returns
+            monthly_data['Monthly Return'] = monthly_data['Adj Close'].pct_change() * 100  # Convert to percentage
+
+            # Drop the first row (which will have NaN return)
+            monthly_data = monthly_data.dropna()
+
+            # Display the processed monthly return data
+            st.write("### Monthly Returns Data - Amazon")
+            st.dataframe(monthly_data[['Date', 'Adj Close', 'Monthly Return']])
+
+            # SSL context and Fama-French data loading section
             ssl_context = ssl._create_unverified_context()
 
             st.write("### Loading Fama-French Data")

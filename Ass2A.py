@@ -169,9 +169,9 @@ def main():
             - **Beta ~ 1**: Indicates the asset moves in line with the market.
             
             **Examples:**
-            - Amazon (AMZN): Beta of 1.093 suggests it is slightly more volatile than the market.
-            - Boeing (BA): Beta of 1.106 indicates moderate sensitivity to market movements.
-            - General Electric (GE): Beta of 1.166 indicates higher sensitivity to market trends.
+            - Amazon (AMZN): Beta of 1.103 suggests it is slightly more volatile than the market.
+            - Boeing (BA): Beta of 1.119 indicates moderate sensitivity to market movements.
+            - General Electric (GE): Beta of 1.171 indicates higher sensitivity to market trends.
             """)
 
         # Part 2: Apple Stock Simulation

@@ -203,7 +203,7 @@ def main():
                 risk_free_rate = 0.02
                 st.write(f"Risk-Free Rate: {risk_free_rate:.2%}")
 
-                # Optimize with predicted returns
+                # Optimise with predicted returns
                 with st.spinner('Optimising portfolio weights using predicted returns...'):
                     optimal_result_predicted = minimize(negative_sharpe_ratio, initial_weights, 
                                                      args=(mean_predicted_returns, cov_matrix, risk_free_rate),

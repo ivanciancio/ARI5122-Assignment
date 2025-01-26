@@ -190,11 +190,11 @@ def main():
         - **Gold (SPDR) (GLD):**
             - The ACF plot shows less pronounced autocorrelation compared to the stock indices.
             - The PACF plot may have a significant spike at lag 1 but less so than the stock indices.
-            - **Conclusion:** The Gold series may exhibit random walk characteristics but with weaker autocorrelation.
+            - **Conclusion:** The Gold series may exhibit random walk characteristics but with weaker autocorrelation, suggesting some mean-reverting tendencies.
 
         **Overall Interpretation:**
-        - The slow decay in the ACF plots and significant spike at lag 1 in the PACF plots are characteristic of non-stationary series.
-        - This indicates that past values have a strong influence on future values, and the series are not easily predictable.
+        - The slow decay in the ACF plots and significant spike at lag 1 in the PACF plots are characteristic of non-stationary series that may follow a random walk.
+        - This indicates that past values have a strong influence on future values, and the series are not easily predictable using simple linear models.
         """)
 
     # 3. Log Returns Vs Arithmetic Returns
@@ -221,13 +221,13 @@ def main():
         st.subheader("Why Are Log Returns Preferred Over Arithmetic Returns?")
         st.write("""
         - **Additivity Over Time:**
-            - Log returns are time-additive. The sum of log returns over multiple periods equals the log return over the total period.
+            - Log returns are time-additive. The sum of log returns over multiple periods equals the log return over the total period (e.g., log returns of 0.02 and 0.03 sum to a total return of 0.05).
         - **Normal Distribution Assumption:**
-            - Log returns are often more normally distributed than arithmetic returns.
+            - Log returns are often more normally distributed than arithmetic returns. This makes them more suitable for statistical models that assume normality.
         - **Continuous Compounding Properties:**
-            - Log returns assume continuous compounding, which aligns with many financial models.
+            - Log returns assume continuous compounding, which aligns with many financial models and theoretical frameworks. This property, combined with the natural properties of logarithms, makes them particularly useful in financial mathematics.
         - **Risk Management Benefits:**
-            - For assets with large price changes, log returns prevent negative prices.
+            - For assets with large price changes, log returns prevent negative prices, which can occur when using arithmetic returns.
         """)
 
     # 4. Distribution Moments Analysis
@@ -235,6 +235,26 @@ def main():
         st.markdown("---")
         st.header("4. Distribution Moments Analysis")
 
+        # Description of calculations and steps
+        st.subheader("Calculations and Steps Performed")
+        st.write("""
+        - **Step 1: Calculate Daily Log Returns**
+            - Computed as the natural logarithm of the ratio of consecutive closing prices.
+        - **Step 2: Compute the First Four Moments**
+            - **Mean (First Moment):** Average of the daily log returns.
+            - **Variance (Second Moment):** Measures the dispersion of returns around the mean.
+            - **Skewness (Third Moment):** Assesses the asymmetry of the return distribution.
+            - **Kurtosis (Fourth Moment):** Evaluates the 'tailedness' of the distribution.
+        - **Step 3: Summarise the Results**
+            - Stored the computed statistics in a summary table for comparison.
+        """)
+
+        # Display the first four moments for each instrument and compare them based on risk and return
+        st.subheader("First Four Moments of Daily Log Returns")
+        st.write("""
+        Comparison of Instruments Based on Risk and Return
+        """)
+        
         # Create comparison table
         comparison_table = {
             "Instrument": [],
@@ -263,18 +283,27 @@ def main():
         st.subheader("Analysis of Significant Differences")
         st.write("""
         - **Mean Return:**
-            - Shows the average daily return for each instrument
-            - Higher values indicate better average performance
+            - **S&P 500** has the highest mean daily return, suggesting better average performance over the period.
+            - **Gold (SPDR)** shows a lower mean return, indicating more modest growth.
         - **Variance (Risk):**
-            - Measures the spread of returns around the mean
-            - Higher values indicate more volatility and risk
+            - **S&P 500** and **FTSE 100** have higher variances, implying greater risk and volatility.
+            - **Gold (SPDR)** exhibits lower variance, suggesting it is less volatile compared to the stock indices.
         - **Skewness:**
-            - Measures asymmetry in the return distribution
-            - Positive values indicate more extreme positive returns
-            - Negative values indicate more extreme negative returns
+            - All instruments have skewness values close to zero, indicating relatively symmetric return distributions.
+            - Slight negative skewness may suggest a tendency for occasional large negative returns.
         - **Kurtosis:**
-            - Measures the "tailedness" of the distribution
-            - Higher values indicate more extreme events
+            - All instruments show positive kurtosis greater than 0 (since excess kurtosis is calculated), indicating heavier tails than a normal distribution.
+            - This implies a higher probability of extreme returns (both positive and negative), which is important for risk management.
+        
+        **Conclusion:**
+
+        - **Risk-Return Trade-off:**
+            - Higher returns are associated with higher risk for the stock indices (S&P 500 and FTSE 100).
+            - Gold offers lower returns with lower risk, making it an attractive option for conservatve investors.
+        - **Diversification Benefits:**
+            - Combining assets with different risk-return profiles, such as stocks and gold, can enhance porfolio diversification, reducing overall risk while maintaining acceptable returns.
+        - **Extreme Movements:**
+            - The high kurtosis values across all instruments highlight the potential for extreme market events. This highlights the need for robust risk management strategies to mitigate the impact of tail risks.
         """)
 
     # 5. Annualisation of Return and Volatility
@@ -319,13 +348,14 @@ def main():
             st.markdown("<hr style='margin: 5px 0; opacity: 0.2'>", unsafe_allow_html=True)
 
         # Explanation
-        st.subheader("Explanation of Calculations")
-        st.write("""
-        - **Annual Return:** Daily mean return × 252 (trading days)
-        - **Annual Volatility:** Daily standard deviation × √252
-        - The factor of 252 is used as there are approximately 252 trading days in a year
-        - This annualization allows for easier comparison with other investments
-        """)
+        st.subheader("Explanation of Calculations and Annualisation Rationale")
+        st.write(
+            """
+        - **Mean Daily Return**: Multiplied by 252 (approximate number of trading days in a year) to annualise the return.
+        - **Daily Volatility**: Scaled by √252 to annualise volatility, reflecting annual risk.
+        - **Rationale for Annualisation**: Annualising allows for consistent comparison of returns and risks on a yearly basis, aiding investment decisions.
+            """
+        )
 
 if __name__ == "__main__":
     main()
