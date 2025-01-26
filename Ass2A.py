@@ -47,28 +47,10 @@ def main():
     st.sidebar.markdown("ℹ️ Tip: You can select multiple analyses to view them all at once.")
 
     # Function to fetch historical data using yfinance, cached for efficiency
-    from data_utils import safe_yf_download  # Add at top with other imports
-
     @st.cache_data
-    def fetch_data(tickers, start, end):
-        try:
-            data = safe_yf_download(list(tickers.values()), start=start, end=end)
-            if data is None or data.empty:
-                st.error(f"Unable to fetch data for tickers")
-                return pd.DataFrame()
-                
-            # If single ticker was passed, convert Series to DataFrame
-            if isinstance(data, pd.Series):
-                data = data.to_frame()
-                
-            # Rename columns from ticker symbols to company names
-            ticker_to_name = {v: k for k, v in tickers.items()}
-            data.columns = [ticker_to_name.get(col, col) for col in data.columns]
-            
-            return data
-        except Exception as e:
-            st.error(f"Error fetching data: {str(e)}")
-            return pd.DataFrame()
+    def fetch_data(ticker, start, end):
+        # Fetch historical stock data for a given ticker and date range
+        return yf.download(ticker, start=start, end=end)
 
     # Function to calculate daily returns based on adjusted closing prices
     @st.cache_data
@@ -107,17 +89,11 @@ def main():
     if any([sections["1. Data Collection"], sections["2. Beta Calculation"]]):
         if 'processed_data' not in st.session_state:
             st.session_state.processed_data = {}
-            
-            # Fetch all data at once
-            st.write("Fetching data for all stocks...")
-            data = fetch_data(symbols, start_date_part1, end_date_part1)
-            if not data.empty:
-                for name in symbols.keys():
-                    if name in data.columns:
-                        processed_df = pd.DataFrame()
-                        processed_df['Adj Close'] = data[name]
-                        processed_df['Daily Returns'] = processed_df['Adj Close'].pct_change()
-                        st.session_state.processed_data[name] = processed_df
+            for name, ticker in symbols.items():
+                st.write(f"Fetching data for {name}...")
+                data = fetch_data(ticker, start_date_part1, end_date_part1)
+                data['Daily Returns'] = calculate_daily_returns(data)
+                st.session_state.processed_data[name] = data
 
     # Part 1A: Data Collection and Returns Calculation
     if sections["1. Data Collection"]:
@@ -198,64 +174,49 @@ def main():
         st.markdown("---")
         st.subheader("Part 2: Apple Stock Simulation and Risk Assessment")
 
-        try:
-            # Fetching Apple stock data for the specified time range
-            st.write("Fetching Apple's data...")
-            apple_data = safe_yf_download("AAPL", start=start_date_part2, end=end_date_part2)
-            
-            if apple_data is None:
-                st.error("Unable to fetch Apple stock data")
-                return
-                
-            # Convert to DataFrame if it's a Series
-            if isinstance(apple_data, pd.Series):
-                apple_data = apple_data.to_frame(name='Adj Close')
-            
-            # Calculate daily returns
-            apple_data['Daily Returns'] = apple_data['Adj Close'].pct_change()
-            daily_returns = apple_data['Daily Returns'].dropna()
+        # Fetching Apple stock data for the specified time range
+        st.write("Fetching Apple's data...")
+        apple_data = fetch_data("AAPL", start_date_part2, end_date_part2)
+        apple_data['Daily Returns'] = calculate_daily_returns(apple_data)
+        daily_returns = apple_data['Daily Returns'].dropna()
 
-            # Calculating parameters for the GBM model
-            mean_return = daily_returns.mean().item()
-            std_dev = daily_returns.std().item()
-            last_price = apple_data['Adj Close'].iloc[-1].item()
+        # Calculating parameters for the GBM model
+        mean_return = daily_returns.mean().item()
+        std_dev = daily_returns.std().item()
+        last_price = apple_data['Adj Close'].iloc[-1].item()
 
-            # Displaying calculated parameters
-            st.write(f"**Mean Daily Return:** {mean_return:.5f}")
-            st.write(f"**Volatility (Standard Deviation):** {std_dev:.5f}")
-            st.write(f"**Last Observed Price:** ${last_price:.2f}")
+        # Displaying calculated parameters
+        st.write(f"**Mean Daily Return:** {mean_return:.5f}")
+        st.write(f"**Volatility (Standard Deviation):** {std_dev:.5f}")
+        st.write(f"**Last Observed Price:** ${last_price:.2f}")
 
-            # Simulating future price paths
-            st.write("Simulating future price paths using GBM...")
-            days = 20
-            n_simulations = 1000
-            simulated_prices = simulate_gbm(last_price, mean_return, std_dev, days, n_simulations)
+        # Simulating future price paths
+        st.write("Simulating future price paths using GBM...")
+        days = 20
+        n_simulations = 1000
+        simulated_prices = simulate_gbm(last_price, mean_return, std_dev, days, n_simulations)
 
-            # Plotting simulated price paths
-            plt.figure(figsize=(10, 6))
-            plt.plot(simulated_prices, alpha=0.1, color='blue')
-            plt.title("Simulated Price Paths for Apple's Stock")
-            plt.xlabel("Days")
-            plt.ylabel("Price")
-            plt.grid(True)
-            st.pyplot(plt)
+        # Plotting simulated price paths
+        plt.figure(figsize=(10, 6))
+        plt.plot(simulated_prices, alpha=0.1, color='blue')
+        plt.title("Simulated Price Paths for Apple's Stock")
+        plt.xlabel("Days")
+        plt.ylabel("Price")
+        plt.grid(True)
+        st.pyplot(plt)
 
-            # Calculating Value at Risk (VaR) at 95% confidence level
-            st.subheader("Value at Risk (VaR) Calculation")
-            simulated_returns = (simulated_prices.iloc[-1] - last_price) / last_price
-            var_95 = np.percentile(simulated_returns, 5)
+        # Calculating Value at Risk (VaR) at 95% confidence level
+        st.subheader("Value at Risk (VaR) Calculation")
+        simulated_returns = (simulated_prices.iloc[-1] - last_price) / last_price
+        var_95 = np.percentile(simulated_returns, 5)
 
-            # Displaying VaR result
-            st.write(f"**20-Day Value at Risk (VaR) at 95% Confidence Level:** {var_95:.2%}")
-            st.write("""
-            **Interpretation of VaR:**
-            The 20-day VaR at 95% confidence level indicates the potential maximum loss that is unlikely to be exceeded within the given period.
-            For example, a VaR of -5% suggests that there is only a 5% chance of losing more than 5% of the current stock value over the next 20 days.
-            """)
-
-        except Exception as e:
-            st.error(f"Error in stock simulation: {str(e)}")
-            return
+        # Displaying VaR result
+        st.write(f"**20-Day Value at Risk (VaR) at 95% Confidence Level:** {var_95:.2%}")
+        st.write("""
+        **Interpretation of VaR:**
+        The 20-day VaR at 95% confidence level indicates the potential maximum loss that is unlikely to be exceeded within the given period.
+        For example, a VaR of -5% suggests that there is only a 5% chance of losing more than 5% of the current stock value over the next 20 days.
+        """)
 
 if __name__ == "__main__":
     main()

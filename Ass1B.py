@@ -107,62 +107,24 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.markdown("ℹ️ Tip: You can select multiple analyses to view them all at once.")
 
-    from data_utils import safe_yf_download  # Ensure this is at the top with other imports
-
-    @st.cache_resource  # Keep this as cache_resource
+    @st.cache_data
     def load_data():
-        try:
-            # Retrieve data using safe_yf_download function
-            data = safe_yf_download(all_stocks, start=start_date, end=end_date)
-            
-            if data is None:
-                st.error("Cannot proceed with analysis due to data loading error")
-                return pd.DataFrame()
-            
-            # If data is a Series, convert to DataFrame
-            if isinstance(data, pd.Series):
-                data = data.to_frame()
-            
-            # Rename columns to use company names if possible
-            data.columns = [ticker_to_company.get(col, col) for col in data.columns]
-            
-            # Handle missing values
-            data = data.ffill()  # Forward fill
-            data = data.bfill()  # Backward fill
-            
-            return data
-            
-        except Exception as e:
-            st.error(f"Error loading data: {str(e)}")
-            return pd.DataFrame()
+        # Download stock data from Yahoo Finance and handle missing values.
+        data = yf.download(all_stocks, start=start_date, end=end_date)['Adj Close']  # Get adjusted closing prices
+        data = data.ffill()  # Forward fill to handle missing data
+        data = data.bfill()  # Backward fill if any NaNs remain
+        return data
 
-    @st.cache_resource  # Changed from @st.cache_data
+    @st.cache_data
     def normalise_data(data):
-        # Ensure data is a DataFrame with numeric columns
-        if not isinstance(data, pd.DataFrame):
-            st.error("Input to normalise_data must be a DataFrame")
-            return pd.DataFrame()
-        
-        # Select only numeric columns
-        numeric_data = data.select_dtypes(include=[np.number])
-        
-        if numeric_data.empty:
-            st.error("No numeric columns found for normalization")
-            return pd.DataFrame()
-        
         # Normalise the data using StandardScaler to ensure each feature has mean=0 and variance=1.
         scaler = StandardScaler()
-        normalised = scaler.fit_transform(numeric_data)
-        normalised_df = pd.DataFrame(normalised, index=numeric_data.index, columns=numeric_data.columns)
+        normalised = scaler.fit_transform(data)
+        normalised_df = pd.DataFrame(normalised, index=data.index, columns=data.columns)  # Convert to DataFrame
         return normalised_df
 
-    @st.cache_resource  # Changed from @st.cache_data
+    @st.cache_data
     def apply_pca(normalised_data):
-        # Ensure input is not empty
-        if normalised_data.empty:
-            st.error("Cannot apply PCA to empty data")
-            return None, pd.DataFrame(), []
-        
         # Apply Principal Component Analysis (PCA) to reduce data dimensionality.
         pca = PCA()
         principal_components = pca.fit_transform(normalised_data)  # Fit PCA on the normalised data
@@ -171,19 +133,12 @@ def main():
         explained_variance_ratio = pca.explained_variance_ratio_  # Get explained variance ratio
         return pca, principal_df, explained_variance_ratio
 
-    @st.cache_resource  # Changed from @st.cache_data
+    @st.cache_data
     def covid_analysis(data):
         # Perform PCA analysis specifically for the COVID-19 period.
         covid_start_date = '2020-03-01'
         covid_end_date = '2021-12-31'
-        
-        # Ensure data is not empty
-        if data.empty:
-            st.error("Cannot perform COVID analysis on empty data")
-            return None, pd.DataFrame(), pd.DataFrame(), [], pd.DataFrame()
-        
-        # Slice data for COVID-19 period
-        covid_data = data.loc[covid_start_date:covid_end_date]  
+        covid_data = data.loc[covid_start_date:covid_end_date]  # Slice data for COVID-19 period
         
         # Handle any remaining missing values
         covid_data = covid_data.ffill()  # Forward fill
@@ -201,12 +156,6 @@ def main():
         
         # Normalise and apply PCA on the COVID-19 data
         covid_normalised = normalise_data(covid_data)
-        
-        # Check if normalization was successful
-        if covid_normalised.empty:
-            st.error("Failed to normalize COVID-19 data")
-            return None, pd.DataFrame(), pd.DataFrame(), [], pd.DataFrame()
-        
         covid_pca, covid_principal_df, covid_explained_variance_ratio = apply_pca(covid_normalised)
         
         # Create a DataFrame for PCA loadings
