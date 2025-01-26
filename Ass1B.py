@@ -107,13 +107,27 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.markdown("ℹ️ Tip: You can select multiple analyses to view them all at once.")
 
+    from data_utils import safe_yf_download  # Add this at the top with other imports
+
     @st.cache_data
     def load_data():
-        # Download stock data from Yahoo Finance and handle missing values.
-        data = yf.download(all_stocks, start=start_date, end=end_date)['Adj Close']  # Get adjusted closing prices
-        data = data.ffill()  # Forward fill to handle missing data
-        data = data.bfill()  # Backward fill if any NaNs remain
-        return data
+        try:
+            # Use the safe_yf_download function from data_utils
+            data = safe_yf_download(all_stocks, start=start_date, end=end_date)
+            
+            if data is None:
+                st.error("Cannot proceed with analysis due to data loading error")
+                return pd.DataFrame()
+                
+            # Handle missing values
+            data = data.ffill()  # Forward fill
+            data = data.bfill()  # Backward fill
+            
+            return data
+            
+        except Exception as e:
+            st.error(f"Error loading data: {str(e)}")
+            return pd.DataFrame()
 
     @st.cache_data
     def normalise_data(data):

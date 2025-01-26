@@ -52,7 +52,17 @@ def main():
         
         # Download Amazon stock data at a monthly interval
         # This ensures the frequency matches the factor data (generally monthly)
-        stock_data = yf.download('AMZN', start=start_date, end=end_date, interval='1mo')
+        from data_utils import safe_yf_download  # Add at top with other imports
+
+        # Download Amazon stock data at a monthly interval
+        stock_data = safe_yf_download('AMZN', start=start_date, end=end_date, interval='1mo')
+        if stock_data is None:
+            st.error("Unable to proceed due to error in loading Amazon stock data")
+            return
+
+        # Convert to DataFrame if it's a Series
+        if isinstance(stock_data, pd.Series):
+            stock_data = stock_data.to_frame()
         
         # Explain the data preprocessing steps
         st.write("### Data Preprocessing")
