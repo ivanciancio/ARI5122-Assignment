@@ -262,7 +262,7 @@ def main():
                 st.write("""
                 - **Data Alignment**: Ensuring the dates in stock data and Fama-French data match. We converted stock data dates to month-end to align with factor data.
 
-                - **Handling MultiIndex Columns**: Flattened MultiIndex columns returned by `yfinance` to single-level columns for easier handling.
+                - **Handling MultiIndex Columns**: Flattened MultiIndex columns returned by `EODHD to single-level columns for easier handling.
 
                 - **Missing Values**: Handled missing or non-numeric data to prevent calculation errors. Converted factor returns to numeric and dropped missing values.
 
