@@ -1,12 +1,11 @@
-import yfinance as yf  # Library to download financial data
-import matplotlib.pyplot as plt  # Library for plotting graphs
-import streamlit as st  # Library for creating interactive web apps
-import pandas as pd  # Library for data manipulation
-from statsmodels.tsa.stattools import adfuller  # For the Augmented Dickey-Fuller test
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf  # For ACF and PACF plots
-import numpy as np  # Library for numerical operations
-from scipy.stats import skew, kurtosis  # For statistical calculations
-
+from eodhdHelper import get_client  # Import the helper instead of yfinance
+import matplotlib.pyplot as plt
+import streamlit as st
+import pandas as pd
+from statsmodels.tsa.stattools import adfuller
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+import numpy as np
+from scipy.stats import skew, kurtosis
 
 def main():
     # Set up the description of the Streamlit app
@@ -47,43 +46,58 @@ def main():
     # Define the financial instruments (tickers) and the date range for analysis
     tickers = {
         "S&P 500": "^GSPC",       # S&P 500 Index
-        "FTSE 100": "^FTSE",      # FTSE 100 Index
+        "FTSE 100": "ISF.LSE",      # FTSE 100 Index
         "Gold (SPDR)": "GLD"      # SPDR Gold Shares ETF
     }
     start_date = "2015-01-01"
     end_date = "2018-12-31"
 
-    # Download the closing price data for each ticker using yfinance
-    @st.cache_data  # Cache the data to prevent repeated downloads
-    def get_data():
-        return yf.download(
-            list(tickers.values()),  # List of ticker symbols
-            start=start_date,
-            end=end_date
-        )["Close"]  # Get the 'Close' price
-
-    data = get_data()
-    # Rename the columns to use the keys from the tickers dictionary (instrument names)
-    data.columns = tickers.keys()
-
-    # Calculate daily log returns
-    # Formula used: log_return = ln(P_t) - ln(P_{t-1})
-    log_returns = np.log(data / data.shift(1)).dropna()
-
-    # Compute statistical moments for each instrument and store them in a dictionary
+    # Initialize data variables
+    data = None
+    log_returns = None
     moments_summary = {}
-    for column in log_returns.columns:
-        mean = log_returns[column].mean()  # Calculate the mean (average return)
-        variance = log_returns[column].var()  # Calculate the variance (risk)
-        skewness_value = skew(log_returns[column])  # Calculate skewness
-        kurtosis_value = kurtosis(log_returns[column])  # Calculate kurtosis
-        # Store the calculated moments in the dictionary
-        moments_summary[column] = {
-            "Mean": mean,
-            "Variance": variance,
-            "Skewness": skewness_value,
-            "Kurtosis": kurtosis_value
-        }
+
+    try:
+        # Initialize EODHD client
+        client = get_client()
+
+        # Download the closing price data using EODHD
+        @st.cache_data
+        def get_data():
+            dfs = {}
+            for name, symbol in tickers.items():
+                df = client.download(symbol, start=start_date, end=end_date)
+                dfs[name] = df['Adj Close']
+            return pd.DataFrame(dfs)
+
+        # Get the data
+        data = get_data()
+
+        # Calculate daily log returns
+        log_returns = np.log(data / data.shift(1)).dropna()
+
+        # Compute statistical moments for each instrument
+        for column in log_returns.columns:
+            mean = log_returns[column].mean()
+            variance = log_returns[column].var()
+            skewness_value = skew(log_returns[column])
+            kurtosis_value = kurtosis(log_returns[column])
+            moments_summary[column] = {
+                "Mean": mean,
+                "Variance": variance,
+                "Skewness": skewness_value,
+                "Kurtosis": kurtosis_value
+            }
+
+    except Exception as e:
+        st.error(f"Error loading data: {str(e)}")
+        st.info("Please make sure your EODHD API key is configured correctly.")
+        return
+
+    # Only proceed with analysis if we have data
+    if data is None or log_returns is None:
+        st.error("No data available for analysis.")
+        return
 
     # 1. Stationarity Analysis
     if sections["1. Stationarity Analysis"]:
@@ -92,20 +106,17 @@ def main():
 
         # Plot daily closing prices for each instrument
         st.subheader("Daily Closing Prices (2015 - 2018)")
-        fig, ax = plt.subplots(figsize=(14, 8))  # Create a figure for plotting
+        fig, ax = plt.subplots(figsize=(14, 8))
         for column in data.columns:
-            ax.plot(data.index, data[column], label=column)  # Plot each instrument's prices
+            ax.plot(data.index, data[column], label=column)
         ax.set_title("Daily Closing Prices (2015 - 2018)")
         ax.legend()
-        st.pyplot(fig)  # Display the plot in the Streamlit app
+        st.pyplot(fig)
 
-        # Augmented Dickey-Fuller (ADF) test to check for stationarity
+        # Augmented Dickey-Fuller (ADF) test
         st.subheader("Augmented Dickey-Fuller Test Results")
-
-        # Create three columns for side-by-side display
         col1, col2, col3 = st.columns(3)
 
-        # Function to display ADF results in a consistent format
         def display_adf_results(column, result, col):
             with col:
                 st.markdown(f"**{column}**")
@@ -123,7 +134,6 @@ def main():
                 """)
                 st.markdown("---")
 
-        # Display results for each instrument in separate columns
         columns = list(data.columns)
         for i, column in enumerate(columns):
             result = adfuller(data[column].dropna())
@@ -134,7 +144,7 @@ def main():
             else:
                 display_adf_results(column, result, col3)
 
-        # Add a brief interpretation guide below
+        # Add interpretation guide
         st.markdown("""
         #### Interpretation Guide:
         - **ADF Statistic:** A larger negative number means the data is more likely to have a pattern we can analyse
@@ -147,21 +157,21 @@ def main():
         st.markdown("---")  
         st.header("2. Random Walk Analysis")
 
-        # Plot Autocorrelation Function (ACF) and Partial Autocorrelation Function (PACF)
+        # Plot ACF and PACF
         st.subheader("Autocorrelation and Partial Autocorrelation Plots")
         for column in data.columns:
             st.write(f"### {column}")
 
-            # Plot the ACF
+            # Plot ACF
             fig_acf, ax_acf = plt.subplots(figsize=(10, 5))
             plot_acf(data[column].dropna(), ax=ax_acf, lags=50)
             st.pyplot(fig_acf)
 
-            # Plot the PACF
+            # Plot PACF
             fig_pacf, ax_pacf = plt.subplots(figsize=(10, 5))
             plot_pacf(data[column].dropna(), ax=ax_pacf, lags=50, method='ywm')
             st.pyplot(fig_pacf)
-        
+
         # Observations and Explanations
         st.subheader("Observations and Conclusions")
         st.write("""
@@ -180,24 +190,23 @@ def main():
         - **Gold (SPDR) (GLD):**
             - The ACF plot shows less pronounced autocorrelation compared to the stock indices.
             - The PACF plot may have a significant spike at lag 1 but less so than the stock indices.
-            - **Conclusion:** The Gold series may exhibit random walk characteristics but with weaker autocorrelation, suggesting some mean-reverting tendencies.
+            - **Conclusion:** The Gold series may exhibit random walk characteristics but with weaker autocorrelation.
 
         **Overall Interpretation:**
-
-        - The slow decay in the ACF plots and significant spike at lag 1 in the PACF plots are characteristic of non-stationary series that may follow a random walk.
-        - This indicates that past values have a strong influence on future values, and the series are not easily predictable using simple linear models.
+        - The slow decay in the ACF plots and significant spike at lag 1 in the PACF plots are characteristic of non-stationary series.
+        - This indicates that past values have a strong influence on future values, and the series are not easily predictable.
         """)
 
     # 3. Log Returns Vs Arithmetic Returns
     if sections["3. Log Returns Vs Arithmetic Returns"]:
-        st.markdown("---") 
+        st.markdown("---")
         st.header("3. Log Returns Vs Arithmetic Returns")
 
-        # Calculate arithmetic returns (percentage change) First fill NA values, then calculate percentage change
-        data_filled = data.ffill()  
+        # Calculate arithmetic returns
+        data_filled = data.ffill()
         arithmetic_returns = data_filled.pct_change().dropna()
-    
-        # Plot comparison of log returns vs arithmetic returns for each instrument
+
+        # Plot comparison
         st.subheader("Comparison of Log Returns and Arithmetic Returns")
         for column in data.columns:
             st.write(f"### {column}")
@@ -207,46 +216,26 @@ def main():
             ax.set_title(f"Log Returns vs Arithmetic Returns for {column}")
             ax.legend()
             st.pyplot(fig)
-        
-        # Explanation of why log returns are preferred
+
+        # Explanation
         st.subheader("Why Are Log Returns Preferred Over Arithmetic Returns?")
         st.write("""
         - **Additivity Over Time:**
-            - Log returns are time-additive. The sum of log returns over multiple periods equals the log return over the total period (e.g., log returns of 0.02 and 0.03 sum to a total return of 0.05).
+            - Log returns are time-additive. The sum of log returns over multiple periods equals the log return over the total period.
         - **Normal Distribution Assumption:**
-            - Log returns are often more normally distributed than arithmetic returns. This makes them more suitable for statistical models that assume normality.
+            - Log returns are often more normally distributed than arithmetic returns.
         - **Continuous Compounding Properties:**
-            - Log returns assume continuous compounding, which aligns with many financial models and theoretical frameworks. This property, combined with the natural properties of logarithms, makes them particularly useful in financial mathematics.
+            - Log returns assume continuous compounding, which aligns with many financial models.
         - **Risk Management Benefits:**
-            - For assets with large price changes, log returns prevent negative prices, which can occur when using arithmetic returns.
+            - For assets with large price changes, log returns prevent negative prices.
         """)
 
     # 4. Distribution Moments Analysis
     if sections["4. Distribution Moments Analysis"]:
-        st.markdown("---") 
+        st.markdown("---")
         st.header("4. Distribution Moments Analysis")
 
-        # Description of calculations and steps
-        st.subheader("Calculations and Steps Performed")
-        st.write("""
-        - **Step 1: Calculate Daily Log Returns**
-            - Computed as the natural logarithm of the ratio of consecutive closing prices.
-        - **Step 2: Compute the First Four Moments**
-            - **Mean (First Moment):** Average of the daily log returns.
-            - **Variance (Second Moment):** Measures the dispersion of returns around the mean.
-            - **Skewness (Third Moment):** Assesses the asymmetry of the return distribution.
-            - **Kurtosis (Fourth Moment):** Evaluates the 'tailedness' of the distribution.
-        - **Step 3: Summarise the Results**
-            - Stored the computed statistics in a summary table for comparison.
-        """)
-
-        # Display the first four moments for each instrument and compare them based on risk and return
-        st.subheader("First Four Moments of Daily Log Returns")
-        st.write("""
-        Comparison of Instruments Based on Risk and Return
-        """)
-
-        # Create a table to display the comparison
+        # Create comparison table
         comparison_table = {
             "Instrument": [],
             "Mean Return": [],
@@ -262,7 +251,6 @@ def main():
             comparison_table["Skewness"].append(stats['Skewness'])
             comparison_table["Kurtosis"].append(stats['Kurtosis'])
 
-        # Convert the dictionary to a DataFrame for display
         comparison_df = pd.DataFrame(comparison_table)
         st.table(comparison_df.style.format({
             "Mean Return": "{:.6f}",
@@ -271,39 +259,29 @@ def main():
             "Kurtosis": "{:.6f}"
         }))
 
-        # Provide analysis of significant differences
+        # Analysis
         st.subheader("Analysis of Significant Differences")
         st.write("""
         - **Mean Return:**
-            - **S&P 500** has the highest mean daily return, suggesting better average performance over the period.
-            - **Gold (SPDR)** shows a lower mean return, indicating more modest growth.
+            - Shows the average daily return for each instrument
+            - Higher values indicate better average performance
         - **Variance (Risk):**
-            - **S&P 500** and **FTSE 100** have higher variances, implying greater risk and volatility.
-            - **Gold (SPDR)** exhibits lower variance, suggesting it is less volatile compared to the stock indices.
+            - Measures the spread of returns around the mean
+            - Higher values indicate more volatility and risk
         - **Skewness:**
-            - All instruments have skewness values close to zero, indicating relatively symmetric return distributions.
-            - Slight negative skewness may suggest a tendency for occasional large negative returns.
+            - Measures asymmetry in the return distribution
+            - Positive values indicate more extreme positive returns
+            - Negative values indicate more extreme negative returns
         - **Kurtosis:**
-            - All instruments show positive kurtosis greater than 0 (since excess kurtosis is calculated), indicating heavier tails than a normal distribution.
-            - This implies a higher probability of extreme returns (both positive and negative), which is important for risk management.
-        
-        **Conclusion:**
-
-        - **Risk-Return Trade-off:**
-            - Higher returns are associated with higher risk for the stock indices (S&P 500 and FTSE 100).
-            - Gold offers lower returns with lower risk, making it an attractive option for conservatve investors.
-        - **Diversification Benefits:**
-            - Combining assets with different risk-return profiles, such as stocks and gold, can enhance porfolio diversification, reducing overall risk while maintaining acceptable returns.
-        - **Extreme Movements:**
-            - The high kurtosis values across all instruments highlight the potential for extreme market events. This highlights the need for robust risk management strategies to mitigate the impact of tail risks.
+            - Measures the "tailedness" of the distribution
+            - Higher values indicate more extreme events
         """)
 
-  # 5. Annualisation of Return and Volatility
+    # 5. Annualisation of Return and Volatility
     if sections["5. Annualisation of Return and Volatility"]:
-        st.markdown("---") 
+        st.markdown("---")
         st.header("5. Annualisation of Return and Volatility")
-        
-        # Create four columns for the expanded layout
+
         col1, col2, col3, col4, col5 = st.columns([2, 1.5, 1.5, 1.5, 1.5])
         
         with col1:
@@ -317,17 +295,14 @@ def main():
         with col5:
             st.markdown("#### As Percentage")
 
-        # Add a divider
         st.markdown("---")
 
-        # Display data for each instrument
         for column in log_returns.columns:
             mean = moments_summary[column]["Mean"]
             variance = moments_summary[column]["Variance"]
             annualised_return = mean * 252
             annualised_volatility = np.sqrt(variance) * np.sqrt(252)
             
-            # Create columns for each row of data
             c1, c2, c3, c4, c5 = st.columns([2, 1.5, 1.5, 1.5, 1.5])
             
             with c1:
@@ -340,20 +315,17 @@ def main():
                 st.markdown(f"**{annualised_volatility:.6f}**")
             with c5:
                 st.markdown(f"**{annualised_volatility:.2%}**")
-                
-            # Add subtle separator between rows
+            
             st.markdown("<hr style='margin: 5px 0; opacity: 0.2'>", unsafe_allow_html=True)
 
-               
-        # Explanation of the calculations and rationale
-        st.subheader("Explanation of Calculations and Annualisation Rationale")
-        st.write(
-            """
-        - **Mean Daily Return**: Multiplied by 252 (approximate number of trading days in a year) to annualise the return.
-        - **Daily Volatility**: Scaled by √252 to annualise volatility, reflecting annual risk.
-        - **Rationale for Annualisation**: Annualising allows for consistent comparison of returns and risks on a yearly basis, aiding investment decisions.
-            """
-        )
+        # Explanation
+        st.subheader("Explanation of Calculations")
+        st.write("""
+        - **Annual Return:** Daily mean return × 252 (trading days)
+        - **Annual Volatility:** Daily standard deviation × √252
+        - The factor of 252 is used as there are approximately 252 trading days in a year
+        - This annualization allows for easier comparison with other investments
+        """)
 
 if __name__ == "__main__":
     main()
