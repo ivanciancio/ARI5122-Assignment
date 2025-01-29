@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
-from eodhdHelper import get_client
+from eodhdapi import get_client # Import EODHD API
 
 def main():
     # Title

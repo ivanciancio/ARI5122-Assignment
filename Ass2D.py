@@ -9,7 +9,7 @@ import urllib.request
 import io
 import zipfile
 from pandas.tseries.offsets import MonthEnd
-from eodhdHelper import get_client  # Import EODHD client helper
+from eodhdapi import get_client  # Import EODHD API
 
 def main():
     # Title

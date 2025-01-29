@@ -1,5 +1,5 @@
 # Importing the necessary libraries for data retrieval, analysis, and modelling
-from eodhdHelper import get_client
+from eodhdapi import get_client # Import EODHD API
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt

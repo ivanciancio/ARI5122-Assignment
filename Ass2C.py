@@ -1,5 +1,5 @@
 # Import necessary libraries
-from eodhdHelper import get_client  # For downloading financial data from EODHD
+from eodhdapi import get_client  # Import EODHD API
 import numpy as np  # For numerical operations
 import pandas as pd  # For data manipulation
 import matplotlib.pyplot as plt  # For plotting graphs

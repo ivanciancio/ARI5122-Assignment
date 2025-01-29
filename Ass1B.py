@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import seaborn as sns
-from eodhdHelper import get_client
+from eodhdapi import get_client # Import EODHD API
 
 ticker_to_company = {
     # Technology (Top 5 by market cap)

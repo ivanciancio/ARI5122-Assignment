@@ -1,4 +1,4 @@
-from eodhdHelper import get_client  # Import the helper instead of yfinance
+from eodhdapi import get_client  # Import EODHD API
 import matplotlib.pyplot as plt
 import streamlit as st
 import pandas as pd
