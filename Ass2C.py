@@ -20,7 +20,7 @@ def main():
             st.session_state[var] = 'N/A' if 'mse' in var else None
 
     # Modified stock ticker input to handle EODHD format
-    selected_stock = st.text_input("Enter Stock Ticker (e.g., AAPL.US, SPY.US, BTC-USD)")
+    selected_stock = st.text_input("Enter Stock Ticker (e.g., AAPL.US, ^GSPC, BTC-USD)")
     
     # Sidebar options for user to select which analyses to display
     st.sidebar.markdown("### Available Analyses")
@@ -52,7 +52,7 @@ def main():
     @st.cache_data  # Cache the data retrieval to speed up subsequent runs
     def get_data(ticker):
         try:
-            # Initialize EODHD client
+            # Initialise EODHD client
             client = get_client()
             
             # Fetch historical price data starting from 2022-01-01 until the current date
@@ -67,7 +67,6 @@ def main():
             data = get_data(selected_stock)
             if data.empty:
                 st.error("No data available for the selected stock. Please check the ticker symbol and try again.")
-                st.info("Make sure to include the correct suffix (e.g., '.US' for US stocks)")
                 return
 
             # Confirm that data retrieval was successful before proceeding
@@ -333,7 +332,7 @@ def main():
                         better_model = "GARCH(1,1)" if st.session_state.garch_mse < st.session_state.nn_mse else "Neural Network"
                         st.write(f"The {better_model} model shows better performance for this dataset.")
 
-                        # Provide a discussion about which model is more effective and why
+                        # Which model is more effective and why
                         st.write("## Which approach was more effective for this dataset, and why?")
                         if st.session_state.garch_mse < st.session_state.nn_mse:
                             st.write("The **GARCH(1,1) Model** was more effective, likely due to its direct modelling of volatility clustering, a common characteristic in financial returns.")

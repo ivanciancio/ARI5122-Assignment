@@ -107,7 +107,7 @@ def main():
     st.sidebar.markdown("ℹ️ Tip: You can select multiple analyses to view them all at once.")
 
     try:
-        # Initialize EODHD client
+        # Initialise EODHD client
         client = get_client()
 
         @st.cache_data
@@ -302,7 +302,7 @@ def main():
             
             try:
                 # Retrieve S&P 500 data for comparison
-                sp500_data = client.download('SPY.US', start='2020-03-01', end='2021-12-31')
+                sp500_data = client.download('^GSPC', start='2020-03-01', end='2021-12-31')
                 sp500_returns = sp500_data['Adj Close'].pct_change().dropna()
                 sp500_cum_returns = (1 + sp500_returns).cumprod()
                 

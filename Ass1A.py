@@ -10,7 +10,7 @@ from scipy.stats import skew, kurtosis
 def main():
     # Set up the description of the Streamlit app
     st.write("### Financial Data Analysis with Random Walk Investigation")
-    st.write("Analyzing daily prices for S&P 500, FTSE 100, and Gold (SPDR) from 2015 to 2018.")
+    st.write("Analysing daily prices for S&P 500, FTSE 100, and Gold (SPDR) from 2015 to 2018.")
 
     # Sidebar options for user to select which analyses to display
     st.sidebar.markdown("### Available Analyses")
@@ -46,19 +46,19 @@ def main():
     # Define the financial instruments (tickers) and the date range for analysis
     tickers = {
         "S&P 500": "^GSPC",       # S&P 500 Index
-        "FTSE 100": "ISF.LSE",      # FTSE 100 Index
+        "FTSE 100": "FTSE.INDX",      # FTSE 100 Index
         "Gold (SPDR)": "GLD"      # SPDR Gold Shares ETF
     }
     start_date = "2015-01-01"
     end_date = "2018-12-31"
 
-    # Initialize data variables
+    # Initializs data variables
     data = None
     log_returns = None
     moments_summary = {}
 
     try:
-        # Initialize EODHD client
+        # Initialise EODHD client
         client = get_client()
 
         # Download the closing price data using EODHD

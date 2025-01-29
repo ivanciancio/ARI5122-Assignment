@@ -61,7 +61,7 @@ class EODHDClient:
             if df.empty:
                 raise Exception(f"No data returned for symbol {symbol}")
             
-            # Rename columns to match yfinance format
+            # Rename columns
             df = df.rename(columns={
                 'date': 'Date',
                 'open': 'Open',
@@ -109,14 +109,5 @@ def get_client():
             
     except KeyError:
         st.error("""
-        EODHD API key not found. Please configure it:
-        
-        Local Development:
-        1. Create `.streamlit/secrets.toml`
-        2. Add: EODHD_API_KEY = "your_api_key"
-        
-        Streamlit Cloud:
-        1. Go to App Settings
-        2. Under Secrets, add the same line
-        """)
+        EODHD API key not found. Please configure it.""")
         raise ValueError("EODHD_API_KEY not found in Streamlit secrets")

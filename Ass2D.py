@@ -51,7 +51,7 @@ def main():
         st.write(f"Collecting monthly returns for Amazon (AMZN.US) from {start_date.strftime('%d-%m-%Y')} to {end_date.strftime('%d-%m-%Y')}.")
         
         try:
-            # Initialize EODHD client
+            # Initialise EODHD client
             client = get_client()
             
             # Download Amazon stock data
@@ -116,7 +116,7 @@ def main():
         st.subheader("Factor Model Calculations")
         
         try:
-            # Initialize EODHD client and get stock data
+            # Initialise EODHD client and get stock data
             client = get_client()
             end_date = datetime.datetime(2018, 12, 31)
             start_date = end_date - relativedelta(months=59)

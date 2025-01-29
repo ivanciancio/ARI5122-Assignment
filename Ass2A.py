@@ -11,7 +11,7 @@ def main():
 
     # Defining the stock symbols to be used in the analysis
     symbols = {
-        "S&P 500": "SPY.US",  # Using SPY ETF as S&P 500 proxy for EODHD
+        "S&P 500": "^GSPC",  # S&P500 stock
         "Amazon (AMZN)": "AMZN.US",  # Amazon stock
         "Boeing (BA)": "BA.US",  # Boeing stock
         "General Electric (GE)": "GE.US",  # General Electric stock
@@ -46,7 +46,7 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.markdown("ℹ️ Tip: You can select multiple analyses to view them all at once.")
 
-    # Initialize EODHD client
+    # Initialise EODHD client
     client = get_client()
 
     # Function to fetch historical data using EODHD, cached for efficiency
@@ -76,7 +76,7 @@ def main():
     # Function to simulate stock prices using the Geometric Brownian Motion (GBM) model
     @st.cache_data
     def simulate_gbm(S0, mu, sigma, days, n_simulations):
-        # Initialize array to store simulated prices
+        # Initialise array to store simulated prices
         dt = 1  # Time step (1 day)
         price_paths = np.zeros((days, n_simulations))  # Create a matrix for price paths
         price_paths[0] = S0  # Set initial price for all simulations

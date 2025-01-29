@@ -47,7 +47,7 @@ def main():
     # Function definitions
     def download_stock_data(tickers, start_date):
         try:
-            # Initialize EODHD client
+            # Initialise EODHD client
             client = get_client()
             
             # Download data for each ticker and combine
@@ -58,7 +58,7 @@ def main():
             
             # Combine all data frames
             data = pd.concat(data_frames, axis=1)
-            data.columns = ticker_display  # Use display names without .US suffix
+            data.columns = ticker_display  # Use display names
             return data
         except Exception as e:
             st.error(f"Error downloading data: {str(e)}")
@@ -133,7 +133,7 @@ def main():
             cov_matrix = daily_returns.cov()
             risk_free_rate = 0.02
 
-            # Run optimization
+            # Run optimisation
             with st.spinner('Optimising portfolio weights...'):
                 optimal_result = minimize(negative_sharpe_ratio, initial_weights, 
                                        args=(mean_returns, cov_matrix, risk_free_rate),
