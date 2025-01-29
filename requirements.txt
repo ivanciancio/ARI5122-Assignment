@@ -2,10 +2,9 @@ streamlit
 pandas
 numpy
 matplotlib
-plotly
-requests
 scipy
 scikit-learn
 statsmodels
 seaborn
 arch
+python-dateutil
