@@ -19,7 +19,7 @@ def main():
     tickers = ['AAPL.US', 'MSFT.US', 'GOOGL.US']
     ticker_display = ['AAPL', 'MSFT', 'GOOGL']  # For display purposes
     end_date = datetime.now()
-    start_date = (end_date - timedelta(days=5*365)).strftime('%Y-%m-%01')
+    start_date = (end_date - timedelta(days=5*365)).strftime('%Y-%m-01')
 
     # Sidebar options for user to select which analyses to display
     st.sidebar.markdown("### Available Analyses")
